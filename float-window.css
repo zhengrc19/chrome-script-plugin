@@ -1,0 +1,15 @@
+.go-top {
+    position: fixed;	        /* 设置fixed固定定位 */
+    bottom: 20px;		/* 距离浏览器窗口下边框20px */
+    right: 20px;		/* 距离浏览器窗口右边框20px */
+}
+.go-top a {
+    display: block;			/* 将<a>标签设为块元素，用于美化样式 */
+    text-decoration: none;		/* 取消超链接下画线 */
+    color: #333;			/* 设置文本颜色 */
+    background-color: #f2f2f2;		/* 设置背景颜色 */
+    border: 1px solid #ccc;		/* 设置边框样式 */
+    padding: 10px 20px;			/* 设置内边距 */
+    border-radius: 5px;			/* 设置圆角矩形 */
+    letter-spacing: 2px;		/* 设置文字间距 */
+}
