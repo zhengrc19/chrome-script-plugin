@@ -5,13 +5,17 @@
     "background": {
         "service_worker": "background.js"
     },
-    "permissions": [],
+    "permissions": [
+        "activeTab"
+    ],
     "action": {
         "default_title": "Settings",
         "default_popup": "popup.html"
     },
-    "content_scripts": {
-        "matches": ["https://*google*"],
-        "css": ["float-window.css"]
-    }
+    "content_scripts": [
+        {
+            "matches": ["https://www.google.com.hk/"],
+            "css": ["float-window.css"]
+        }
+    ]
 }

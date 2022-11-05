@@ -1,5 +1,6 @@
 <html>
 <head>
+  <meta charset="UTF-8" />
   <link rel="stylesheet" href="third-party/jquery-ui.css">
   <link rel="stylesheet" href="third-party/jquery-ui.structure.css">
   <link rel="stylesheet" href="third-party/jquery-ui.theme.css">
@@ -8,12 +9,15 @@
   <script src="third-party/jquery-ui-1.12.1.js"></script>
 </head>
 <body style="width: 400px">
-  <div>Search Bookmarks: <input id="search"></div>
-  <div id="bookmarks"></div>
-  <div id="editdialog"></div>
-  <div id="deletedialog"></div>
-  <div id="adddialog"></div>
-  <div id="test-frame"></div>
+  <div>屏幕录制      
+    <label class="switch">
+    <input type="checkbox" checked>
+    <span class="slider round"></span>
+    </label>
+  </div>
+  <div>输入捕获</div>
+  <div>命令弹窗</div>
+  <button>更多设置</button>
   <script src="popup.js"></script>
 </body>
 </html>
