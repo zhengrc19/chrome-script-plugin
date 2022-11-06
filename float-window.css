@@ -1,7 +1,7 @@
 .go-top {
     position: fixed;	        /* 设置fixed固定定位 */
     bottom: 20px;		/* 距离浏览器窗口下边框20px */
-    right: 20px;		/* 距离浏览器窗口右边框20px */
+    left: 20px;		/* 距离浏览器窗口右边框20px */
 }
 .go-top a {
     display: block;			/* 将<a>标签设为块元素，用于美化样式 */
@@ -12,4 +12,12 @@
     padding: 10px 20px;			/* 设置内边距 */
     border-radius: 5px;			/* 设置圆角矩形 */
     letter-spacing: 2px;		/* 设置文字间距 */
+}
+
+.go-top a:hover, .go-top a:active {
+    text-decoration: none;		/* 取消超链接下画线 */
+}
+
+.go-top a:visited {
+    color: #333;
 }

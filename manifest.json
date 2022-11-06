@@ -15,7 +15,8 @@
     "content_scripts": [
         {
             "matches": ["https://www.google.com.hk/"],
-            "css": ["float-window.css"]
+            "css": ["float-window.css"],
+            "js": ["recoder-popper.js"]
         }
     ]
 }
