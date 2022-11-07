@@ -163,6 +163,11 @@ class PluginMsgEvent {
     toString() {
         return `${this.data}`; 
     }
+
+    /**
+     * @param {RecorderHandler} msg_handler 
+     */
+     handle(msg_handler) {}
 }
 
 class MsgRecoderEvent extends PluginMsgEvent {
@@ -174,7 +179,15 @@ class MsgRecoderEvent extends PluginMsgEvent {
         check_msg_legality(RecoderEventRule, this.data, msg);
     }
 
-    
+    /**
+     * @param {RecorderHandler} msg_handler 
+     */
+    handle(msg_handler) {
+        let type = this.data.type;
+        if(type === RecoderEventType.END) {
+            msg_handler.store();
+        }
+    }
 }
 
 class MsgClickEvent extends PluginMsgEvent{
@@ -215,5 +228,13 @@ export class Message {
 
     toString() {
         return JSON.stringify(this.msg);
+    }
+
+    /**
+     * @param {RecorderHandler} msg_handler 
+     */
+    handle(msg_handler) {
+        msg_handler.received_msgs.push(this);
+        this.event.handle(msg_handler);
     }
 }

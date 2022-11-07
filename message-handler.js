@@ -14,5 +14,10 @@ export default class RecorderHandler {
         let msg = new Message(msg_obj);
         console.log(msg);
         console.log(msg.get_event());
+        msg.handle(this);
+    }
+
+    store() {
+        console.log("store history ...");
     }
 }
