@@ -46,6 +46,19 @@ recoder_button.addEventListener("click", function(event) {
 
     // TODO: send mes to backend
     console.log("recording action: ", timestamp, is_start);
+
+    chrome.runtime.sendMessage(
+        // extensionId?: string,
+        {
+            "url": "",    // content script url
+            "id": -1,        // unique content script id, assigned by background
+            "type": 1,      // message event type
+            "timestamp": timestamp, // UNIX timestamp
+            data: {  
+                "type": is_start? 1 : 2
+            }
+        },
+      )
 });
 
 /**
