@@ -106,7 +106,7 @@ const ClickEventRule = {
     else if(type == String)
         return 'string';
     else
-        throw "illecgal type";
+        throw "illegal type";
 }
 
 /**

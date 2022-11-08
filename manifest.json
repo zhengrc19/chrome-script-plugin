@@ -16,14 +16,14 @@
     },
     "content_scripts": [
         {
-            "matches": ["https://www.google.com.hk/"],
+            "matches": ["https://www.google.com.hk/*"],
             "all_frames": true,
             "css": ["float-window.css"],
             "js": ["recoder-popper.js"]
         }
     ],
     "externally_connectable": {
-        "matches": ["https://www.google.com.hk/"],
+        "matches": ["https://www.google.com.hk/*"],
         "accepts_tls_channel_id": false
     }
 }
