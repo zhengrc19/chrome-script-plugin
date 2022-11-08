@@ -1,23 +1,74 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <link rel="stylesheet" href="third-party/jquery-ui.css">
+  <!-- <link rel="stylesheet" href="third-party/jquery-ui.css">
   <link rel="stylesheet" href="third-party/jquery-ui.structure.css">
-  <link rel="stylesheet" href="third-party/jquery-ui.theme.css">
+  <link rel="stylesheet" href="third-party/jquery-ui.theme.css"> -->
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
   <link rel="stylesheet" href="popup.css">
-  <script src="third-party/jquery-1.12.4.js"></script>
-  <script src="third-party/jquery-ui-1.12.1.js"></script>
+  <!-- <script src="third-party/jquery-1.12.4.js"></script>
+  <script src="third-party/jquery-ui-1.12.1.js"></script> -->
 </head>
-<body style="width: 400px">
-  <div>屏幕录制      
-    <label class="switch">
-    <input type="checkbox" checked>
-    <span class="slider round"></span>
-    </label>
+<body style="width: 170px">
+  <div class="container" style="margin-top: 5px; margin-bottom: 5px; margin-left: 5px; margin-right: 5px;">
+    <div class="row">
+        <div class="col-sm-3 keys">
+            <li>屏幕录制</li>
+        </div> 
+        <div class="col-sm-4 values">
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="slider round"></span>
+          </label>
+        </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-3 keys">
+          <li>输入捕获</li>
+      </div> 
+      <div class="col-sm-4 values">
+        <label class="switch">
+          <input type="checkbox" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-3 keys">
+          <li>命令弹窗</li>
+      </div> 
+      <div class="col-sm-4 values">
+        <label class="switch">
+          <input type="checkbox" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </div>
+    <div class="row" style="margin: auto; width: 60%;">
+      <button style="margin-top: 10px; margin-bottom: 10px; font-weight: bold;">更多设置</button>
+    </div>
   </div>
-  <div>输入捕获</div>
-  <div>命令弹窗</div>
-  <button>更多设置</button>
+
+<!-- 
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" 
+  rel="stylesheet" />
+  <div class="row flex">
+    <div class="col-md-2">
+      <img src="http://placehold.it/300x300" alt="" class="img-responsive">
+      <p class="text-center channel-number">2</p>
+    </div>
+    <div class="col-md-2">
+      <img src="http://placehold.it/300x100" alt="" class="img-responsive">
+      <p class="text-center channel-number">4</p>
+    </div>
+    <div class="col-md-2">
+      <img src="http://placehold.it/300x400" alt="" class="img-responsive">
+      <p class="text-center channel-number">11</p>
+    </div>
+  </div>
+ -->
+
   <script src="popup.js"></script>
 </body>
 </html>
