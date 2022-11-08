@@ -42,13 +42,15 @@ export default class RecorderHandler {
             });
         }
         await getStorageValuePromise(this.received_msgs);
+        console.log("array returned from chrome get");
         console.log(new_array);
         chrome.storage.local.set({'msgs': new_array}, function() {
             console.log("new msgs is stored");
         });
-        this.sended_msgs.push.apply(this.sended_msgs, this.received_msgs);
+        // this.sended_msgs.push.apply(this.sended_msgs, this.received_msgs);
+        console.log("clearing this.received_msgs");
         this.received_msgs.length = 0;
         console.log(this.received_msgs);
-        console.log(this.sended_msgs);
+        // console.log(this.sended_msgs);
     }
 }
