@@ -1,6 +1,12 @@
-// chrome.action.onClicked.addListener((tab) => {
-//     chrome.scripting.executeScript({
-//       target: { tabId: tab.id },
-//       files: ['recoder-popper.js']
-//     });
-// });
+console.log("start backend ...");
+
+import RecorderHandler from './message-handler.js';
+console.log("imported handler")
+
+var handler = new RecorderHandler();
+
+chrome.runtime.onMessage.addListener((message, callback) => {
+    console.log(message);
+    handler.msg_callback(message);
+});
+

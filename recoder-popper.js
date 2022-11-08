@@ -1,5 +1,86 @@
 console.log("popping recoder ...");
 
+
+/* msg buiding funcs */
+const MessageEventType = {
+    RecorderEvent: 1,
+    ClickEvent: 2,
+    InputEvent: 3
+};
+
+const RecoderEventType = {
+    BEGIN: 1,
+    END: 2
+};
+
+
+/**
+ * 
+ * @param {string} url 
+ * @param {number} id 
+ * @param {number} event_type 
+ * @param {number} timestamp 
+ * @param {Object} data 
+ * @returns {Object}
+ */
+ function build_msg(url, id, event_type, timestamp, data) {
+    return {
+        "url": url,
+        "id": id,
+        "type": event_type,
+        "timestamp": timestamp,
+        "data": data
+    };
+}
+
+/**
+ * 
+ * @param {string} url 
+ * @param {number} id 
+ * @param {number} timestamp 
+ * @param {string} type 
+ * @param {string} selector 
+ * @param {number} offsetX 
+ * @param {number} offsetY 
+ * @param {number} pageX 
+ * @param {number} pageY 
+ * @returns {Object}
+ */
+function build_click_msg(
+    url, id, timestamp, 
+    type, selector, 
+    offsetX, offsetY,
+    pageX, pageY
+) {
+    let data = {
+        "type": type,
+        "selector": selector,
+        "offsetXY": [offsetX, offsetY],
+        "pageXY": [pageX, pageY]
+    };
+    return build_msg(url, id, MessageEventType.ClickEvent, timestamp, data);
+}
+
+/**
+ * 
+ * @param {string} url 
+ * @param {number} id 
+ * @param {number} timestamp 
+ * @param {boolean} is_start
+ * @returns 
+ */
+function build_record_msg(
+    url, id, timestamp, 
+    is_start
+) {
+    let data = {
+        "type": is_start? RecoderEventType.BEGIN: RecoderEventType.END
+    };
+    return build_msg(url, id, MessageEventType.RecorderEvent, timestamp, data);
+}
+
+
+
 /* Pop floating window */
 var float_recoder = document.createElement("div");
 float_recoder.classList.add("go-top");
@@ -46,6 +127,10 @@ recoder_button.addEventListener("click", function(event) {
 
     // TODO: send mes to backend
     console.log("recording action: ", timestamp, is_start);
+
+    chrome.runtime.sendMessage(
+        build_record_msg("", -1, timestamp, is_start)
+    );
 });
 
 /**
@@ -92,4 +177,8 @@ document.body.addEventListener("click", function(event) {
     let selector = get_selector(event.target);
     console.log(selector);
     console.assert(document.querySelector(selector) == event.target); // assert selector is right
+
+    chrome.runtime.sendMessage(
+        build_click_msg("", -1, timestamp, event.type, selector, event.offsetX, event.offsetY, event.pageX, event.pageY)
+    );
 });

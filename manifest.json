@@ -3,7 +3,8 @@
     "manifest_version": 3,
     "version": "0.1",
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "background.js",
+        "type": "module"
     },
     "permissions": [
         "activeTab"
@@ -15,8 +16,13 @@
     "content_scripts": [
         {
             "matches": ["https://www.google.com.hk/"],
+            "all_frames": true,
             "css": ["float-window.css"],
             "js": ["recoder-popper.js"]
         }
-    ]
+    ],
+    "externally_connectable": {
+        "matches": ["https://www.google.com.hk/"],
+        "accepts_tls_channel_id": false
+    }
 }
