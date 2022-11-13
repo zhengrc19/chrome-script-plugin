@@ -79,6 +79,25 @@ function build_record_msg(
     return build_msg(url, id, MessageEventType.RecorderEvent, timestamp, data);
 }
 
+/**
+ * 
+ * @param {string} url 
+ * @param {number} id 
+ * @param {number} timestamp 
+ * @param {string} selector 
+ * @param {string} text 
+ * @returns 
+ */
+function build_input_msg(
+    url, id, timestamp, 
+    selector, text
+) {
+    let data = {
+        "text": text,
+        "selector": selector
+    };
+    return build_msg(url, id, MessageEventType.InputEvent, timestamp, data);
+}
 
 
 /* Pop floating window */
@@ -165,6 +184,7 @@ document.body.addEventListener("click", function(event) {
     }
     
     let timestamp = get_timestamp();
+    console.log("onclick!");
     console.log(event.target);
     console.log(timestamp);
     console.log(event.offsetX, event.offsetY);  // cursor pos relative to targeted object
@@ -182,3 +202,29 @@ document.body.addEventListener("click", function(event) {
         build_click_msg("", -1, timestamp, event.type, selector, event.offsetX, event.offsetY, event.pageX, event.pageY)
     );
 });
+
+
+/* Listen all input change event */
+var input_list = document.getElementsByTagName("input");
+console.log(input_list.length);
+
+for (let i = 0; i < input_list.length; i++) {
+    let input_item = input_list[i];
+    input_item.addEventListener("change", (ev) => {
+        if (!is_recording()) {  // ignoring if not recording
+            return;
+        }
+
+        let timestamp = get_timestamp();
+        let current_text = input_item.value;
+        let selector = get_selector(input_item);
+        console.log("onchange!");
+        console.log(current_text, timestamp);
+        console.log(selector);
+        console.assert(document.querySelector(selector) == ev.target);
+
+        chrome.runtime.sendMessage(
+            build_input_msg("", -1, timestamp, selector, current_text)
+        );
+    });
+}

@@ -89,6 +89,14 @@ const ClickEventRule = {
     }
 };
 
+const InputEventRule = {
+    text: {
+        type: String
+    },
+    selector: {
+        type: String
+    }
+}
 
 /**
  * @param {*} type 
@@ -200,6 +208,16 @@ class MsgClickEvent extends PluginMsgEvent{
     }
 }
 
+class MsgInputEvent extends PluginMsgEvent {
+    /**
+     * @param {Object} msg 
+     */
+    constructor(msg) {
+        super(msg);
+        check_msg_legality(InputEventRule, this.data, msg);
+    }
+}
+
 export class Message {
     /**
      * @param {Object} msg 
@@ -216,11 +234,13 @@ export class Message {
             this.event = new MsgRecoderEvent(msg);
         } else if(this.event_type === MessageEventType.ClickEvent) {
             this.event = new MsgClickEvent(msg);
+        } else if(this.event_type === MessageEventType.InputEvent) {
+            this.event = new MsgInputEvent(msg)
         }
     }
 
     /**
-     * @returns {MsgClickEvent | MsgRecoderEvent | null}
+     * @returns {MsgClickEvent | MsgRecoderEvent | MsgInputEvent | null}
      */
     get_event() {
         return this.event;
