@@ -58,25 +58,28 @@ export class IllegalFieldTypeErr extends MessageParseErr {
      * @param {Object} orig_msg
      */
     constructor(type, field_name, require_type, enum_list, arr_len, part, orig_msg) {
-        this.found_val = part[field_name];
-        this.found_type = typeof(this.found_val);
-        this.field_name = field_name; 
-        this.require_type = require_type;
-        this.enum_list = enum_list;
-        this.required_arr_len = arr_len;
+        let found_val = part[field_name];
+        let found_type = typeof(found_val);
 
 
         if (type === IllegalFieldTypeErr.Type.OTHER) {
             super("Illegal Field", 
-                `field_name="${field_name}, require a val in list ${enum_list}, get ${this.found_val}"`, part, orig_msg);
+                `field_name="${field_name}, require a val in list ${enum_list}, get ${found_val}"`, part, orig_msg);
         } else if (type === IllegalFieldTypeErr.Type.ENUM) {
             super("Illegal Field",
-                `field_name="${field_name}", require ${require_type}, get ${this.found_type}`, part, orig_msg);
+                `field_name="${field_name}", require ${require_type}, get ${found_type}`, part, orig_msg);
         } else if (type === IllegalFieldTypeErr.Type.ARRLEN) {
             super("Illegal Field", 
-                `field_name="${field_name}, require arr_len=${arr_len}, get arr_len=${this.found_val.length()}"`, part, orig_msg);
+                `field_name="${field_name}, require arr_len=${arr_len}, get arr_len=${found_val.length()}"`, part, orig_msg);
         } else {
             throw `illegal type specified: ${type}`
         }
+
+        this.found_type = found_type;
+        this.found_val = found_val;
+        this.field_name = field_name; 
+        this.require_type = require_type;
+        this.enum_list = enum_list;
+        this.required_arr_len = arr_len;
     }
 }

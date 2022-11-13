@@ -5,8 +5,8 @@ console.log("imported handler")
 
 var handler = new RecorderHandler();
 
-chrome.runtime.onMessage.addListener((message, callback) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log(message);
-    handler.msg_callback(message);
+    handler.msg_callback(message, sendResponse);
 });
 

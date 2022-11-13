@@ -4,17 +4,21 @@ export default class RecorderHandler {
     constructor() {
         this.received_msgs = new Array();
         this.sended_msgs = new Array();
+
+        this.is_recording = false;
+        this.cur_id = 0;
     }
 
     /**
      * @param {Object} msg_obj
+     * @param {*} sendResponse
      */
-    msg_callback(msg_obj) {
+    msg_callback(msg_obj, sendResponse) {
         console.log("received! ", msg_obj);
         let msg = new Message(msg_obj);
         console.log(msg);
         console.log(msg.get_event());
-        msg.handle(this);
+        msg.handle(this, sendResponse);
     }
 
     async store() {

@@ -1,6 +1,7 @@
 import { FieldMissingErr, IllegalFieldTypeErr} from "./errors.js";
 
 export const MessageEventType = {
+    ContentInitEvent: 0,
     RecorderEvent: 1,
     ClickEvent: 2,
     InputEvent: 3
@@ -174,8 +175,9 @@ class PluginMsgEvent {
 
     /**
      * @param {RecorderHandler} msg_handler 
+     * @param {*} sendResponse
      */
-     handle(msg_handler) {}
+     handle(msg_handler, sendResponse) {}
 }
 
 class MsgRecoderEvent extends PluginMsgEvent {
@@ -189,11 +191,23 @@ class MsgRecoderEvent extends PluginMsgEvent {
 
     /**
      * @param {RecorderHandler} msg_handler 
+     * @param {*} sendResponse
      */
-    handle(msg_handler) {
+    handle(msg_handler, sendResponse) {
         let type = this.data.type;
+        if(type == RecoderEventType.BEGIN) {
+            if(msg_handler.is_recording) {
+                throw "Shouldn't in recording!";
+            }
+            msg_handler.is_recording = true;
+        }
         if(type === RecoderEventType.END) {
+            if(!msg_handler.is_recording) {
+                throw "Isn't in recording!";
+            }
             msg_handler.store();
+            msg_handler.cur_id += 1;
+            msg_handler.is_recording = false;
         }
     }
 }
@@ -218,6 +232,25 @@ class MsgInputEvent extends PluginMsgEvent {
     }
 }
 
+class MsgContentInitEvent extends PluginMsgEvent {
+    /**
+     * @param {Object} msg 
+     */
+    constructor(msg) {
+        super(msg);
+    }
+
+    /**
+     * @param {RecorderHandler} msg_handler 
+     * @param {*} sendResponse
+     */
+    handle(msg_handler, sendResponse) { 
+        let msg = {"is_recording": msg_handler.is_recording, "id": msg_handler.cur_id};
+        sendResponse(msg);
+        msg_handler.sended_msgs.push(msg);
+    }
+}
+
 export class Message {
     /**
      * @param {Object} msg 
@@ -235,7 +268,9 @@ export class Message {
         } else if(this.event_type === MessageEventType.ClickEvent) {
             this.event = new MsgClickEvent(msg);
         } else if(this.event_type === MessageEventType.InputEvent) {
-            this.event = new MsgInputEvent(msg)
+            this.event = new MsgInputEvent(msg);
+        } else if(this.event_type == MessageEventType.ContentInitEvent) {
+            this.event = new MsgContentInitEvent(msg);
         }
     }
 
@@ -252,9 +287,10 @@ export class Message {
 
     /**
      * @param {RecorderHandler} msg_handler 
+     * @param {*} sendResponse
      */
-    handle(msg_handler) {
+    handle(msg_handler, sendResponse) {
         msg_handler.received_msgs.push(this);
-        this.event.handle(msg_handler);
+        this.event.handle(msg_handler, sendResponse);
     }
 }

@@ -3,6 +3,7 @@ console.log("popping recoder ...");
 
 /* msg buiding funcs */
 const MessageEventType = {
+    ContentInitEvent: 0,
     RecorderEvent: 1,
     ClickEvent: 2,
     InputEvent: 3
@@ -13,20 +14,30 @@ const RecoderEventType = {
     END: 2
 };
 
+/**
+ * get url of this webpage
+ * @returns {string}
+ */
+function get_url() {
+    return window.location.href;
+}
+
+
+var record_id = -1;
+function get_record_id() {
+    return record_id;
+}
 
 /**
- * 
- * @param {string} url 
- * @param {number} id 
  * @param {number} event_type 
  * @param {number} timestamp 
  * @param {Object} data 
  * @returns {Object}
  */
- function build_msg(url, id, event_type, timestamp, data) {
+ function build_msg(event_type, timestamp, data) {
     return {
-        "url": url,
-        "id": id,
+        "url": get_url(),
+        "id": get_record_id(),
         "type": event_type,
         "timestamp": timestamp,
         "data": data
@@ -34,8 +45,6 @@ const RecoderEventType = {
 }
 
 /**
- * 
- * @param {string} url 
  * @param {number} id 
  * @param {number} timestamp 
  * @param {string} type 
@@ -47,7 +56,7 @@ const RecoderEventType = {
  * @returns {Object}
  */
 function build_click_msg(
-    url, id, timestamp, 
+    timestamp, 
     type, selector, 
     offsetX, offsetY,
     pageX, pageY
@@ -58,47 +67,49 @@ function build_click_msg(
         "offsetXY": [offsetX, offsetY],
         "pageXY": [pageX, pageY]
     };
-    return build_msg(url, id, MessageEventType.ClickEvent, timestamp, data);
+    return build_msg(MessageEventType.ClickEvent, timestamp, data);
 }
 
 /**
- * 
- * @param {string} url 
- * @param {number} id 
  * @param {number} timestamp 
  * @param {boolean} is_start
  * @returns 
  */
 function build_record_msg(
-    url, id, timestamp, 
+    timestamp, 
     is_start
 ) {
     let data = {
         "type": is_start? RecoderEventType.BEGIN: RecoderEventType.END
     };
-    return build_msg(url, id, MessageEventType.RecorderEvent, timestamp, data);
+    return build_msg(MessageEventType.RecorderEvent, timestamp, data);
 }
 
 /**
- * 
- * @param {string} url 
- * @param {number} id 
  * @param {number} timestamp 
  * @param {string} selector 
  * @param {string} text 
  * @returns 
  */
 function build_input_msg(
-    url, id, timestamp, 
+    timestamp, 
     selector, text
 ) {
     let data = {
         "text": text,
         "selector": selector
     };
-    return build_msg(url, id, MessageEventType.InputEvent, timestamp, data);
+    return build_msg(MessageEventType.InputEvent, timestamp, data);
 }
 
+function build_init_msg (
+    timestamp
+) {
+    let data = {
+        "placeholder": ""
+    };
+    return build_msg(MessageEventType.ContentInitEvent, timestamp, data);
+}
 
 /* Pop floating window */
 var float_recoder = document.createElement("div");
@@ -108,6 +119,24 @@ float_recoder.innerHTML = '<a href="#" id="ext-recoder-href">开始<br/>录制</
 document.body.appendChild(float_recoder);
 
 recoder_button = float_recoder.children[0];
+
+/* send content start msg */
+var init_is_recording;
+chrome.runtime.sendMessage(
+    build_init_msg(get_timestamp()),
+    callback = (response) => {
+        console.log(response);
+        init_is_recording = response["is_recording"];
+        let id = response["id"];
+        record_id = id;
+
+        if (init_is_recording) {
+            recoder_button.classList.add("recording");
+            recoder_button.style.color = 'red';
+        }
+    }
+);
+
 
 /** global variables */
 /**
@@ -130,6 +159,7 @@ function get_userset_scrollXY() {
     return [userset_scrollX, userset_scrollY]
 }
 
+/** func for event */
 /**
  * get UNIX timestamp using data.now
  * @function
@@ -139,29 +169,6 @@ function get_userset_scrollXY() {
 function get_timestamp() {
     return Date.now().valueOf();
 }
-
-recoder_button.addEventListener("click", function(event) {
-    let timestamp = get_timestamp();
-    let is_start;
-    if(this.classList.contains("recording")) {
-        console.log("end recoding");
-        is_start = false;
-        this.classList.remove("recording");
-        this.style.color = null;
-    } else {
-        console.log("start recoding");
-        is_start = true;
-        this.classList.add("recording");
-        this.style.color = 'red';
-    }
-
-    // TODO: send mes to backend
-    console.log("recording action: ", timestamp, is_start);
-
-    chrome.runtime.sendMessage(
-        build_record_msg("", -1, timestamp, is_start)
-    );
-});
 
 /**
  * get selector
@@ -204,6 +211,28 @@ function ignore_click(el) {
     return ignore_click(el.parentElement);
 }
 
+/** Send recoder msg */
+recoder_button.addEventListener("click", function(event) {
+    let timestamp = get_timestamp();
+    let is_start;
+    if(this.classList.contains("recording")) {
+        console.log("end recoding");
+        is_start = false;
+        this.classList.remove("recording");
+        this.style.color = null;
+    } else {
+        console.log("start recoding");
+        is_start = true;
+        this.classList.add("recording");
+        this.style.color = 'red';
+    }
+
+    console.log("recording action: ", timestamp, is_start);
+
+    chrome.runtime.sendMessage(
+        build_record_msg(timestamp, is_start)
+    );
+});
 
 /* Listen all click event */
 document.body.addEventListener("click", function(event) {
@@ -234,7 +263,7 @@ document.body.addEventListener("click", function(event) {
     console.assert(document.querySelector(selector) == event.target); // assert selector is right
 
     chrome.runtime.sendMessage(
-        build_click_msg("", -1, timestamp, event.type, selector, event.offsetX, event.offsetY, event.pageX, event.pageY)
+        build_click_msg(timestamp, event.type, selector, event.offsetX, event.offsetY, event.pageX, event.pageY)
     );
 });
 
@@ -259,13 +288,17 @@ for (let i = 0; i < input_list.length; i++) {
         console.assert(document.querySelector(selector) == ev.target);
 
         chrome.runtime.sendMessage(
-            build_input_msg("", -1, timestamp, selector, current_text)
+            build_input_msg(timestamp, selector, current_text)
         );
     });
 }
 
 /* Listen scroll event */ 
 window.addEventListener("scroll", (ev) => {
+    if (!is_recording()) {  // ignoring if not recording
+        return;
+    }
+
     let timestamp = get_timestamp();
     let setXY = get_userset_scrollXY();
     if (window.scrollX == setXY[0] && window.scrollY == setXY[1]) {
