@@ -109,6 +109,7 @@ document.body.appendChild(float_recoder);
 
 recoder_button = float_recoder.children[0];
 
+/** global variables */
 /**
  * return true if in recording process
  * @function
@@ -117,6 +118,16 @@ recoder_button = float_recoder.children[0];
  */
 function is_recording() {
     return recoder_button.classList.contains("recording");
+}
+
+var userset_scrollX = 0;
+var userset_scrollY = 0;
+/**
+ * @function
+ * @returns {array}
+ */
+function get_userset_scrollXY() {
+    return [userset_scrollX, userset_scrollY]
 }
 
 /**
@@ -172,6 +183,27 @@ function get_selector(el) {
     return get_selector(el.parentElement) + " > " + el.tagName + ":nth-child(" + child_idx.toString() + ")";
 }
 
+/**
+ * @function
+ * @param {HTMLElement} el
+ */
+function ignore_click(el) {
+    let tag = el.tagName.toLowerCase();
+    if (tag == "body") {
+        return true;
+    }
+
+    if (tag == "a" || tag == "input" || tag == "button") {
+        return false;
+    }
+
+    if(el.getAttribute("onclick") != null || el.getAttribute("href") != null) {
+        return false;
+    }
+
+    return ignore_click(el.parentElement);
+}
+
 
 /* Listen all click event */
 document.body.addEventListener("click", function(event) {
@@ -182,17 +214,20 @@ document.body.addEventListener("click", function(event) {
     || event.target.id === "ext-recoder-window") { // ignoring click on recoder
         return; 
     }
-    
-    let timestamp = get_timestamp();
+
     console.log("onclick!");
     console.log(event.target);
+    if (ignore_click(event.target)){  // TODO: more accurate filter
+        return;
+    }
+    
+    let timestamp = get_timestamp();
+    
     console.log(timestamp);
     console.log(event.offsetX, event.offsetY);  // cursor pos relative to targeted object
     console.log(event.pageX, event.pageY);  // cursor pos relative to webpage
     console.log(event.type);  // 'click' 'submit'
-
-    // TODO: filter useless click
-
+    
     // get selector
     let selector = get_selector(event.target);
     console.log(selector);
@@ -228,3 +263,16 @@ for (let i = 0; i < input_list.length; i++) {
         );
     });
 }
+
+/* Listen scroll event */ 
+window.addEventListener("scroll", (ev) => {
+    let timestamp = get_timestamp();
+    let setXY = get_userset_scrollXY();
+    if (window.scrollX == setXY[0] && window.scrollY == setXY[1]) {
+        return;
+    }
+    console.log("scroll warning!");
+    console.log(timestamp, window.scrollX, window.scrollY);
+    window.alert("Please scroll using recoder! ");
+    window.scrollTo(setXY[0], setXY[1]);
+});
