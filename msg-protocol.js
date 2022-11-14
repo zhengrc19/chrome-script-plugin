@@ -4,7 +4,8 @@ export const MessageEventType = {
     ContentInitEvent: 0,
     RecorderEvent: 1,
     ClickEvent: 2,
-    InputEvent: 3
+    InputEvent: 3,
+    ScrollEvent: 4
 };
 
 const RecoderEventType = {
@@ -96,6 +97,16 @@ const InputEventRule = {
     },
     selector: {
         type: String
+    }
+}
+
+const ScrollEventRule = {
+    scrollXY: {
+        type: Array,
+        arr_len: 2,
+        child: {
+            type: Number
+        }
     }
 }
 
@@ -294,6 +305,30 @@ class MsgContentInitEvent extends PluginMsgEvent {
         let msg = {"is_recording": msg_handler.is_recording, "id": msg_handler.cur_id};
         sendResponse(msg);
         msg_handler.sended_msgs.push(msg);
+
+        if (msg_handler.is_recording) {
+            let timestamp = this.msg.timestamp;
+            chrome.tabs.captureVisibleTab().then((data_url) => {
+                download_img(data_url, timestamp, msg_handler.record_id_date, "new_page");
+            });
+        }
+    }
+}
+
+class MsgScrollEvent extends PluginMsgEvent {
+    /**
+     * @param {Object} msg 
+     */
+     constructor(msg) {
+        super(msg);
+        check_msg_legality(ScrollEventRule, this.data, msg);
+    }
+
+    handle(msg_handler, sendResponse) {
+        let timestamp = this.msg.timestamp;
+        chrome.tabs.captureVisibleTab().then((data_url) => {
+            download_img(data_url, timestamp, msg_handler.record_id_date, "scroll");
+        });
     }
 }
 
@@ -317,6 +352,8 @@ export class Message {
             this.event = new MsgInputEvent(msg);
         } else if(this.event_type == MessageEventType.ContentInitEvent) {
             this.event = new MsgContentInitEvent(msg);
+        } else if(this.event_type == MessageEventType.ScrollEvent) {
+            this.event = new MsgScrollEvent(msg);
         }
     }
 

@@ -6,7 +6,8 @@ const MessageEventType = {
     ContentInitEvent: 0,
     RecorderEvent: 1,
     ClickEvent: 2,
-    InputEvent: 3
+    InputEvent: 3,
+    ScrollEvent: 4
 };
 
 const RecoderEventType = {
@@ -102,6 +103,10 @@ function build_input_msg(
     return build_msg(MessageEventType.InputEvent, timestamp, data);
 }
 
+/**
+ * @param {number} timestamp 
+ * @returns 
+ */
 function build_init_msg (
     timestamp
 ) {
@@ -109,6 +114,21 @@ function build_init_msg (
         "placeholder": ""
     };
     return build_msg(MessageEventType.ContentInitEvent, timestamp, data);
+}
+
+/**
+ * @param {number} timestamp 
+ * @param {number} scrollX 
+ * @param {number} scrollY 
+ * @returns 
+ */
+function build_scroll_msg (
+    timestamp, scrollX, scrollY
+) {
+    let data = {
+        "scrollXY": [scrollX, scrollY]
+    };
+    return build_msg(MessageEventType.ScrollEvent, timestamp, data);
 }
 
 /* Pop floating window */
@@ -119,6 +139,114 @@ float_recoder.innerHTML = '<a href="#" id="ext-recoder-href">开始<br/>录制</
 document.body.appendChild(float_recoder);
 
 recoder_button = float_recoder.children[0];
+
+var action_panel = document.createElement("div");
+action_panel.classList.add("go-top");
+action_panel.classList.add("dropup");
+action_panel.classList.add("hidden");
+action_panel.id = "panel";
+var pop_button = document.createElement("button");
+pop_button.classList.add(["btn", "btn-default", "dropdown-toggle"]);
+pop_button.setAttribute("data-toggle","dropdown");
+pop_button.setAttribute("aria-haspopup", "true");
+pop_button.setAttribute("aria-expanded", "false");
+pop_button.innerHTML = '<span class="caret"></span>';
+var dropdown_actions = document.createElement("ul");
+dropdown_actions.classList.add("dropdown-menu");
+var dropdown_scroll = document.createElement("li");
+dropdown_scroll.innerHTML = '<a href="#">滚动</a>'
+dropdown_actions.appendChild(dropdown_scroll);
+
+action_panel.appendChild(pop_button);
+action_panel.appendChild(dropdown_actions);
+document.body.appendChild(action_panel);
+
+var scroll_window = document.createElement("div");
+scroll_window.classList.add("go-top");
+scroll_window.classList.add("window");
+scroll_window.classList.add("hidden");
+scroll_window.id = "scroll-window";
+scroll_window.innerHTML = '<p>请输入正整数百分比 (0-100) :</p> \
+<form  class="form-inline" role="form"> \
+    <div class="form-group" style="margin-right: 5px;"> \
+        <label for="scroll_x">x: </label> \
+        <input type="text" id="scroll_x" name="scroll_x"  class="form-control" required> \
+    </div> \
+    <div class="form-group" style="margin-right: 5px;"> \
+        <label for="scroll_y">y: </label> \
+        <input type="text" id="scroll_y" name="scroll_y"  class="form-control" required> \
+    </div> \
+    <div class="form-group"> \
+      <button type="submit" class="btn btn-default">确定</button> \
+    </div> \
+</form>'
+document.body.appendChild(scroll_window);
+
+var scroll_form = scroll_window.children[1];
+var all_windows = [scroll_window];
+
+
+/**
+ * @param {HTMLElement} el 
+ * @returns {boolean}
+ */
+function is_hidden(el) {
+    return el.classList.contains("hidden");
+}
+
+/**
+ * @param {HTMLElement} el 
+ */
+function hide_element(el) {
+    if(!is_hidden(el)) {
+        el.classList.add("hidden");
+    }
+}
+/**
+ * @param {HTMLElement} el 
+ */
+ function unhide_element(el) {
+    if(is_hidden(el)) {
+        el.classList.remove("hidden");
+    }
+ }
+
+ /**
+  * hide all windows pop for action
+  */
+ function hide_all_windows() {
+    for(let i=0;i<all_windows.length;i++) {
+        hide_element(all_windows[i]);
+    }
+ }
+
+
+/**
+ * @param {boolean} is_recording 
+ */
+function recoder_change(is_recording) {
+    if(is_recording) {
+        recoder_button.innerHTML = "结束<br/>录制";
+        recoder_button.classList.add("recording");
+        recoder_button.style.color = 'red';
+        unhide_element(action_panel);
+    } else {
+        recoder_button.innerHTML = "开始<br/>录制";
+        recoder_button.classList.remove("recording");
+        recoder_button.style.color = null;
+        hide_all_windows();
+    }
+}
+
+dropdown_scroll.addEventListener("click", (event) => {
+    unhide_element(scroll_window);
+});
+
+pop_button.addEventListener("click", (event) => {
+    if(!pop_button.parentElement.classList.contains("open")) {
+        hide_all_windows();
+    }
+})
 
 /* send content start msg */
 var init_is_recording;
@@ -131,8 +259,7 @@ chrome.runtime.sendMessage(
         record_id = id;
 
         if (init_is_recording) {
-            recoder_button.classList.add("recording");
-            recoder_button.style.color = 'red';
+            recoder_change(init_is_recording);
         }
     }
 );
@@ -211,20 +338,43 @@ function ignore_click(el) {
     return ignore_click(el.parentElement);
 }
 
+/**
+ * @param {HTMLElement} el 
+ * @returns {boolean}
+ */
+function is_inject_el(el) {
+    if(el.tagName.toLowerCase() == "body") {
+        return false;
+    }
+
+    if(el === float_recoder || el === action_panel) {
+        return true;
+    }
+
+    for(let i=0;i<all_windows.length;i++) { 
+        if (el === all_windows[i]) {
+            return true;
+        }
+    }
+
+    return is_inject_el(el.parentElement);
+}
+
+
 /** Send recoder msg */
 recoder_button.addEventListener("click", function(event) {
+    event.preventDefault();
+
     let timestamp = get_timestamp();
     let is_start;
     if(this.classList.contains("recording")) {
         console.log("end recoding");
         is_start = false;
-        this.classList.remove("recording");
-        this.style.color = null;
+        recoder_change(false);
     } else {
         console.log("start recoding");
         is_start = true;
-        this.classList.add("recording");
-        this.style.color = 'red';
+        recoder_change(true);
     }
 
     console.log("recording action: ", timestamp, is_start);
@@ -239,8 +389,7 @@ document.body.addEventListener("click", function(event) {
     if (!is_recording()) {  // ignoring if not recording
         return;
     }
-    if (event.target.id === "ext-recoder-href" 
-    || event.target.id === "ext-recoder-window") { // ignoring click on recoder
+    if (is_inject_el(event.target)) { // ignoring click on recoder
         return; 
     }
 
@@ -274,6 +423,9 @@ console.log(input_list.length);
 
 for (let i = 0; i < input_list.length; i++) {
     let input_item = input_list[i];
+    if(is_inject_el(input_item)) {
+        continue;
+    }
     input_item.addEventListener("change", (ev) => {
         if (!is_recording()) {  // ignoring if not recording
             return;
@@ -301,6 +453,8 @@ window.addEventListener("scroll", (ev) => {
 
     let timestamp = get_timestamp();
     let setXY = get_userset_scrollXY();
+    console.log(setXY, window.scrollX, window.scrollY);
+    
     if (window.scrollX == setXY[0] && window.scrollY == setXY[1]) {
         return;
     }
@@ -308,4 +462,38 @@ window.addEventListener("scroll", (ev) => {
     console.log(timestamp, window.scrollX, window.scrollY);
     window.alert("Please scroll using recoder! ");
     window.scrollTo(setXY[0], setXY[1]);
+});
+
+var max_scrollY = document.body.scrollHeight - document.documentElement.clientHeight;
+max_scrollY = max_scrollY < 0? 0: max_scrollY;
+var max_scrollX = document.body.scrollWidth - document.documentElement.clientWidth;
+max_scrollX = max_scrollX < 0? 0: max_scrollX;
+
+scroll_form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    let sx = document.getElementById("scroll_x").value;
+    let sy = document.getElementById("scroll_y").value;
+
+    sx = parseInt(sx);
+    sy = parseInt(sy);
+
+    if(sx == NaN || sy == NaN) {
+        window.alert("请输入正整数！");
+    }
+    if(sx < 0 || sx > 100 || sy < 0 || sy > 100) {
+        window.alert("请输入 0 到 100 内的整数！");
+    }
+
+    let x = Math.round(max_scrollX * (sx / 100));
+    let y = Math.round(max_scrollY * (sy / 100));
+    userset_scrollX = x;
+    userset_scrollY = y;
+    window.scrollTo(x,y);
+
+    let timestamp = get_timestamp();
+    await new Promise(r => setTimeout(r, 100)); // wait a little while to make sure scroll is done
+    chrome.runtime.sendMessage(
+        build_scroll_msg(timestamp, x, y)
+    );    
 });

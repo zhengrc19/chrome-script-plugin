@@ -24,8 +24,8 @@
         {
             "matches": ["<all_urls>"],
             "all_frames": true,
-            "css": ["float-window.css"],
-            "js": ["recoder-popper.js"]
+            "css": ["float-window.css", "third-party/bootstrap-3.4.1.min.css"],
+            "js": ["third-party/jquery-3.2.1.min.js", "third-party/bootstrap-3.4.1.min.js", "recoder-popper.js"]
         }
     ],
     "externally_connectable": {
