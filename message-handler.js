@@ -7,6 +7,7 @@ export default class RecorderHandler {
 
         this.is_recording = false;
         this.cur_id = 0;
+        this.record_id_date = null;
     }
 
     /**

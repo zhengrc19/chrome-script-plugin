@@ -6,9 +6,15 @@
         "service_worker": "background.js",
         "type": "module"
     },
+    "host_permissions": [
+        "<all_urls>"
+    ],
     "permissions": [
         "activeTab",
-        "storage"
+        "storage",
+        "pageCapture",
+        "tabs",
+        "downloads"
     ],
     "action": {
         "default_title": "Settings",
@@ -16,14 +22,14 @@
     },
     "content_scripts": [
         {
-            "matches": ["https://www.google.com.hk/*"],
+            "matches": ["<all_urls>"],
             "all_frames": true,
             "css": ["float-window.css"],
             "js": ["recoder-popper.js"]
         }
     ],
     "externally_connectable": {
-        "matches": ["https://www.google.com.hk/*"],
+        "matches": ["<all_urls>"],
         "accepts_tls_channel_id": false
     }
 }

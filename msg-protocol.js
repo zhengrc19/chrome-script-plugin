@@ -158,12 +158,36 @@ function check_msg_legality(rule, msg, comp_msg) {
     });
 }
 
+/**
+ * 
+ * @param {string} url 
+ * @param {number} timestamp
+ * @param {Date} id_date date of recode starting time, use as unique record id
+ * @param {string} suffix 
+ */
+function download_img(url, timestamp, id_date, suffix) {
+    if (id_date == null) {
+        throw "null id_date!";
+    }
+    
+    let date_str = id_date.toISOString().replaceAll("-","_").replaceAll(":", ".");
+    let img_filename = `record_${date_str}/img/${timestamp}_${suffix}.jpeg`;
+
+    chrome.downloads.download({
+        filename: img_filename,
+        url: url
+    }).then((downloadId) => {
+        console.log("downloaded!", downloadId, img_filename);
+    });
+}
+
 class PluginMsgEvent {
     /**
      * @param {Object} msg
      */
     constructor(msg) {
         this.data = msg["data"];
+        this.msg = msg;
     }
 
     /**
@@ -199,7 +223,14 @@ class MsgRecoderEvent extends PluginMsgEvent {
             if(msg_handler.is_recording) {
                 throw "Shouldn't in recording!";
             }
+            let timestamp = this.msg.timestamp;
+
             msg_handler.is_recording = true;
+            msg_handler.record_id_date = new Date(timestamp);
+
+            chrome.tabs.captureVisibleTab().then((data_url) => {
+                download_img(data_url, timestamp, msg_handler.record_id_date, "st");
+            });
         }
         if(type === RecoderEventType.END) {
             if(!msg_handler.is_recording) {
@@ -208,6 +239,7 @@ class MsgRecoderEvent extends PluginMsgEvent {
             msg_handler.store();
             msg_handler.cur_id += 1;
             msg_handler.is_recording = false;
+            msg_handler.record_id_date = null;
         }
     }
 }
@@ -220,6 +252,13 @@ class MsgClickEvent extends PluginMsgEvent{
         super(msg);
         check_msg_legality(ClickEventRule, this.data, msg);
     }
+
+    handle(msg_handler, sendResponse) {
+        let timestamp = this.msg.timestamp;
+        chrome.tabs.captureVisibleTab().then((data_url) => {
+            download_img(data_url, timestamp, msg_handler.record_id_date, "click");
+        });
+    }
 }
 
 class MsgInputEvent extends PluginMsgEvent {
@@ -229,6 +268,13 @@ class MsgInputEvent extends PluginMsgEvent {
     constructor(msg) {
         super(msg);
         check_msg_legality(InputEventRule, this.data, msg);
+    }
+
+    handle(msg_handler, sendResponse) {
+        let timestamp = this.msg.timestamp;
+        chrome.tabs.captureVisibleTab().then((data_url) => {
+            download_img(data_url, timestamp, msg_handler.record_id_date, "input");
+        });
     }
 }
 
