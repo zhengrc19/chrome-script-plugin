@@ -6,7 +6,8 @@ export const MessageEventType = {
     ClickEvent: 2,
     InputEvent: 3,
     ScrollEvent: 4,
-    AbstractEvent: 5
+    AbstractEvent: 5,
+    PasteEvent: 6
 };
 
 const RecoderEventType = {
@@ -113,6 +114,47 @@ const ScrollEventRule = {
 
 const AbstractEventRule = {
     abstract: {
+        type: String
+    }
+}
+
+/**
+ * example: {
+        "st_node": {
+            "selector": st_selector,
+            "offset": st_offset
+        },
+        "ed_node": {
+            "selector": ed_selector,
+            "offset": ed_offset
+        },
+        "text": text
+    }
+ */
+const PasteEventRule = {
+    st_node: {
+        type: Object,
+        child: {
+            selector: {
+                type: String
+            },
+            offset: {
+                type: Number
+            }
+        }
+    },
+    ed_node: {
+        type: Object,
+        child: {
+            selector: {
+                type: String
+            },
+            offset: {
+                type: Number
+            }
+        }
+    },
+    text: {
         type: String
     }
 }
@@ -345,7 +387,24 @@ class MsgAbstractEvent extends PluginMsgEvent {
      */
     constructor(msg) {
         super(msg);
-        check_msg_legality(MsgAbstractEvent, this.data, msg);
+        check_msg_legality(AbstractEventRule, this.data, msg);
+    }
+}
+
+class MsgPasteEvent extends PluginMsgEvent {
+    /**
+     * @param {Object} msg 
+     */
+    constructor(msg) {
+        super(msg);
+        check_msg_legality(PasteEventRule, this.data, msg);
+    }
+
+    handle(msg_handler, sendResponse) {
+        let timestamp = this.msg.timestamp;
+        chrome.tabs.captureVisibleTab().then((data_url) => {
+            download_img(data_url, timestamp, msg_handler.record_id_date, "paste");
+        });
     }
 }
 
@@ -373,6 +432,8 @@ export class Message {
             this.event = new MsgScrollEvent(msg);
         } else if(this.event_type == MessageEventType.AbstractEvent) {
             this.event = new MsgAbstractEvent(msg);
+        } else if(this.event_type == MessageEventType.PasteEvent) {
+            this.event = new MsgPasteEvent(msg);
         }
     }
 

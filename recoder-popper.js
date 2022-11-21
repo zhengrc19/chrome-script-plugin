@@ -8,7 +8,8 @@ const MessageEventType = {
     ClickEvent: 2,
     InputEvent: 3,
     ScrollEvent: 4,
-    AbstractEvent: 5
+    AbstractEvent: 5,
+    PasteEvent: 6
 };
 
 const RecoderEventType = {
@@ -148,6 +149,18 @@ function build_abstract_msg(
     return build_msg(MessageEventType.AbstractEvent, timestamp, data);
 }
 
+/**
+ * @param {number} timestamp 
+ * @param {object} data 
+ * @returns 
+ */
+function build_paste_msg(
+    timestamp,
+    data
+) {
+    return build_msg(MessageEventType.PasteEvent, timestamp, data);
+}
+
 /* Pop floating window */
 var float_recoder = document.createElement("div");
 float_recoder.classList.add("go-top");
@@ -172,10 +185,13 @@ var dropdown_scroll = document.createElement("li");
 dropdown_scroll.innerHTML = '<a href="#">滚动</a>';
 var dropdown_text = document.createElement("li");
 dropdown_text.innerHTML = '<a herf="#">摘要</a>';
+var dropdown_paste = document.createElement("li");
+dropdown_paste.innerHTML = '<a herf="#">框选</a>';
 
 var dropdown_actions = document.createElement("ul");
 dropdown_actions.appendChild(dropdown_scroll);
 dropdown_actions.appendChild(dropdown_text);
+dropdown_actions.appendChild(dropdown_paste);
 dropdown_actions.classList.add("dropdown-menu");
 
 action_panel.appendChild(pop_button);
@@ -218,12 +234,30 @@ text_window.innerHTML = ' \
     </div> \
 </form>'
 
+var paste_window = document.createElement("div");
+paste_window.classList.add("go-top");
+paste_window.classList.add("window");
+paste_window.classList.add("hidden");
+paste_window.id = "paste-window";
+paste_window.innerHTML = ' <p>请复制想要的内容，点击复制后，复制的内容会自动显示在输入框中，检查无误后点击确定进行提交。</p>\
+<form role="form"> \
+    <div class="form-group" style="margin-right: 5px;"> \
+        <label for="ext-paste"></label> \
+        <textarea class="form-control" rows="3" id="ext-paste"></textarea> \
+    </div> \
+    <div class="form-group"> \
+      <button type="submit" class="btn btn-default">确定</button> \
+    </div> \
+</form>'
+
 document.body.appendChild(scroll_window);
-document.body.appendChild(text_window)
+document.body.appendChild(text_window);
+document.body.appendChild(paste_window);
 
 var scroll_form = scroll_window.children[1];
 var text_form = text_window.children[0];
-var all_windows = [scroll_window, text_window];
+var paste_form = paste_window.children[1];
+var all_windows = [scroll_window, text_window, paste_window];
 
 
 /**
@@ -289,11 +323,17 @@ dropdown_text.addEventListener("click", (event) => {
     unhide_element(text_window);
 });
 
+dropdown_paste.addEventListener("click", (event) => {
+    event.preventDefault();
+    unhide_element(paste_window);
+});
+
 pop_button.addEventListener("click", (event) => {
+    event.preventDefault();
     if(!pop_button.parentElement.classList.contains("open")) {
         hide_all_windows();
     }
-})
+});
 
 /* send content start msg */
 var init_is_recording;
@@ -352,6 +392,9 @@ function get_timestamp() {
  * @returns {string}
  */
 function get_selector(el) {
+    if (el.tagName == null) {
+        return get_selector(el.parentElement);
+    }
     if (el.tagName.toLowerCase() === "body") {
         return "BODY";
     }
@@ -429,7 +472,6 @@ recoder_button.addEventListener("click", function(event) {
     chrome.runtime.sendMessage(
         build_record_msg(timestamp, is_start)
     );
-    return false;
 });
 
 /* Listen all click event */
@@ -566,5 +608,49 @@ text_form.addEventListener("submit", (event) => {
     );
 
     window.alert("提交成功！");
+    el.value = null;
+});
+
+var selection_data = null;
+document.addEventListener("copy", (event) => {
+    let selection = document.getSelection();
+    let st_node = selection.anchorNode, ed_node = selection.focusNode;
+    let st_offset = selection.anchorOffset, ed_offset = selection.focusOffset;
+    let st_selector = get_selector(st_node), ed_selector = get_selector(ed_node);
+    let text = selection.toString();
+
+    selection_data = {
+        "st_node": {
+            "selector": st_selector,
+            "offset": st_offset
+        },
+        "ed_node": {
+            "selector": ed_selector,
+            "offset": ed_offset
+        },
+        "text": text
+    };
+
+    let el = document.getElementById("ext-paste");
+    el.value = text;
+});
+
+paste_form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (selection_data == null) {
+        window.alert("框选内容不能为空！");
+        return;
+    }
+
+    console.log(selection_data);
+
+    let timestamp = get_timestamp();
+    chrome.runtime.sendMessage(
+        build_paste_msg(timestamp, selection_data)
+    );
+
+    window.alert("提交成功！");
+    selection_data = null;
+    let el = document.getElementById("ext-paste");
     el.value = null;
 });
