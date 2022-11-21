@@ -15,10 +15,10 @@ export default class RecorderHandler {
      * @param {*} sendResponse
      */
     msg_callback(msg_obj, sendResponse) {
-        console.log("received! ", msg_obj);
+        // console.log("received! ", msg_obj);
         let msg = new Message(msg_obj);
         console.log(msg);
-        console.log(msg.get_event());
+        // console.log(msg.get_event());
         msg.handle(this, sendResponse);
     }
 

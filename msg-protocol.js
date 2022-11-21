@@ -5,7 +5,8 @@ export const MessageEventType = {
     RecorderEvent: 1,
     ClickEvent: 2,
     InputEvent: 3,
-    ScrollEvent: 4
+    ScrollEvent: 4,
+    AbstractEvent: 5
 };
 
 const RecoderEventType = {
@@ -107,6 +108,12 @@ const ScrollEventRule = {
         child: {
             type: Number
         }
+    }
+}
+
+const AbstractEventRule = {
+    abstract: {
+        type: String
     }
 }
 
@@ -332,6 +339,16 @@ class MsgScrollEvent extends PluginMsgEvent {
     }
 }
 
+class MsgAbstractEvent extends PluginMsgEvent {
+    /**
+     * @param {Object} msg 
+     */
+    constructor(msg) {
+        super(msg);
+        check_msg_legality(MsgAbstractEvent, this.data, msg);
+    }
+}
+
 export class Message {
     /**
      * @param {Object} msg 
@@ -354,6 +371,8 @@ export class Message {
             this.event = new MsgContentInitEvent(msg);
         } else if(this.event_type == MessageEventType.ScrollEvent) {
             this.event = new MsgScrollEvent(msg);
+        } else if(this.event_type == MessageEventType.AbstractEvent) {
+            this.event = new MsgAbstractEvent(msg);
         }
     }
 

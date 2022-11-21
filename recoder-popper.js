@@ -7,7 +7,8 @@ const MessageEventType = {
     RecorderEvent: 1,
     ClickEvent: 2,
     InputEvent: 3,
-    ScrollEvent: 4
+    ScrollEvent: 4,
+    AbstractEvent: 5
 };
 
 const RecoderEventType = {
@@ -123,7 +124,8 @@ function build_init_msg (
  * @returns 
  */
 function build_scroll_msg (
-    timestamp, scrollX, scrollY
+    timestamp, 
+    scrollX, scrollY
 ) {
     let data = {
         "scrollXY": [scrollX, scrollY]
@@ -131,11 +133,26 @@ function build_scroll_msg (
     return build_msg(MessageEventType.ScrollEvent, timestamp, data);
 }
 
+/**
+ * @param {number} timestamp 
+ * @param {string} abstract 
+ * @returns 
+ */
+function build_abstract_msg(
+    timestamp, 
+    abstract
+) {
+    let data = {
+        "abstract": abstract
+    };
+    return build_msg(MessageEventType.AbstractEvent, timestamp, data);
+}
+
 /* Pop floating window */
 var float_recoder = document.createElement("div");
 float_recoder.classList.add("go-top");
 float_recoder.id = "ext-recoder-window"
-float_recoder.innerHTML = '<a href="#" id="ext-recoder-href">开始<br/>录制</a>';
+float_recoder.innerHTML = '<a href="#" id="ext-recoder-href" role="button">开始<br/>录制</a>';
 document.body.appendChild(float_recoder);
 
 recoder_button = float_recoder.children[0];
@@ -151,11 +168,15 @@ pop_button.setAttribute("data-toggle","dropdown");
 pop_button.setAttribute("aria-haspopup", "true");
 pop_button.setAttribute("aria-expanded", "false");
 pop_button.innerHTML = '<span class="caret"></span>';
-var dropdown_actions = document.createElement("ul");
-dropdown_actions.classList.add("dropdown-menu");
 var dropdown_scroll = document.createElement("li");
-dropdown_scroll.innerHTML = '<a href="#">滚动</a>'
+dropdown_scroll.innerHTML = '<a href="#">滚动</a>';
+var dropdown_text = document.createElement("li");
+dropdown_text.innerHTML = '<a herf="#">摘要</a>';
+
+var dropdown_actions = document.createElement("ul");
 dropdown_actions.appendChild(dropdown_scroll);
+dropdown_actions.appendChild(dropdown_text);
+dropdown_actions.classList.add("dropdown-menu");
 
 action_panel.appendChild(pop_button);
 action_panel.appendChild(dropdown_actions);
@@ -180,10 +201,29 @@ scroll_window.innerHTML = '<p>请输入正整数百分比 (0-100) :</p> \
       <button type="submit" class="btn btn-default">确定</button> \
     </div> \
 </form>'
+
+var text_window = document.createElement("div");
+text_window.classList.add("go-top");
+text_window.classList.add("window");
+text_window.classList.add("hidden");
+text_window.id = "text-window";
+text_window.innerHTML = ' \
+<form role="form"> \
+    <div class="form-group" style="margin-right: 5px;"> \
+        <label for="ext-abstract">请输入摘要内容: </label> \
+        <textarea class="form-control" rows="3" id="ext-abstract"></textarea> \
+    </div> \
+    <div class="form-group"> \
+      <button type="submit" class="btn btn-default">确定</button> \
+    </div> \
+</form>'
+
 document.body.appendChild(scroll_window);
+document.body.appendChild(text_window)
 
 var scroll_form = scroll_window.children[1];
-var all_windows = [scroll_window];
+var text_form = text_window.children[0];
+var all_windows = [scroll_window, text_window];
 
 
 /**
@@ -235,11 +275,18 @@ function recoder_change(is_recording) {
         recoder_button.classList.remove("recording");
         recoder_button.style.color = null;
         hide_all_windows();
+        hide_element(action_panel);
     }
 }
 
 dropdown_scroll.addEventListener("click", (event) => {
+    event.preventDefault();
     unhide_element(scroll_window);
+});
+
+dropdown_text.addEventListener("click", (event) => {
+    event.preventDefault();
+    unhide_element(text_window);
 });
 
 pop_button.addEventListener("click", (event) => {
@@ -382,6 +429,7 @@ recoder_button.addEventListener("click", function(event) {
     chrome.runtime.sendMessage(
         build_record_msg(timestamp, is_start)
     );
+    return false;
 });
 
 /* Listen all click event */
@@ -464,11 +512,6 @@ window.addEventListener("scroll", (ev) => {
     window.scrollTo(setXY[0], setXY[1]);
 });
 
-var max_scrollY = document.body.scrollHeight - document.documentElement.clientHeight;
-max_scrollY = max_scrollY < 0? 0: max_scrollY;
-var max_scrollX = document.body.scrollWidth - document.documentElement.clientWidth;
-max_scrollX = max_scrollX < 0? 0: max_scrollX;
-
 scroll_form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -480,10 +523,17 @@ scroll_form.addEventListener("submit", async (event) => {
 
     if(sx == NaN || sy == NaN) {
         window.alert("请输入正整数！");
+        return;
     }
     if(sx < 0 || sx > 100 || sy < 0 || sy > 100) {
         window.alert("请输入 0 到 100 内的整数！");
+        return;
     }
+
+    let max_scrollY = document.body.scrollHeight - document.documentElement.clientHeight;
+    max_scrollY = max_scrollY < 0? 0: max_scrollY;
+    let max_scrollX = document.body.scrollWidth - document.documentElement.clientWidth;
+    max_scrollX = max_scrollX < 0? 0: max_scrollX;
 
     let x = Math.round(max_scrollX * (sx / 100));
     let y = Math.round(max_scrollY * (sy / 100));
@@ -496,4 +546,25 @@ scroll_form.addEventListener("submit", async (event) => {
     chrome.runtime.sendMessage(
         build_scroll_msg(timestamp, x, y)
     );    
+});
+
+text_form.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    let el = document.getElementById("ext-abstract");
+    let abstract = el.value;
+    console.log(abstract);
+
+    if (abstract.length == 0) {
+        window.alert("摘要不能为空！");
+        return;
+    }
+
+    let timestamp = get_timestamp();
+    chrome.runtime.sendMessage(
+        build_abstract_msg(timestamp, abstract)
+    );
+
+    window.alert("提交成功！");
+    el.value = null;
 });

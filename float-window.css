@@ -3,7 +3,7 @@
     bottom: 20px;		/* 距离浏览器窗口下边框20px */
     left: 20px;		/* 距离浏览器窗口左边框20px */
 }
-.go-top a {
+.go-top #ext-recoder-href {
     display: block;			/* 将<a>标签设为块元素，用于美化样式 */
     text-decoration: none;		/* 取消超链接下画线 */
     color: #333;			/* 设置文本颜色 */
@@ -38,9 +38,6 @@
     position: fixed;
     bottom: 20px;
     left: 120px;
-}
-
-#scroll-window {
     width: fit-content;
     height: fit-content;
     border: 1px solid #ccc;		/* 设置边框样式 */
@@ -51,6 +48,10 @@
 
 #scroll-window form .form-group input {
     width: 40px;
+}
+
+#text-window form .form-group textarea {
+    width: 300px;
 }
 
 .hidden {
