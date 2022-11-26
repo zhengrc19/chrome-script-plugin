@@ -344,6 +344,7 @@ class MsgContentInitEvent extends PluginMsgEvent {
      */
     constructor(msg) {
         super(msg);
+        this.trans_type = null;  // "reload", "forward", "backward", "other"
     }
 
     /**
@@ -351,16 +352,47 @@ class MsgContentInitEvent extends PluginMsgEvent {
      * @param {*} sendResponse
      */
     handle(msg_handler, sendResponse) { 
-        let msg = {"is_recording": msg_handler.is_recording, "id": msg_handler.cur_id};
-        sendResponse(msg);
-        msg_handler.sended_msgs.push(msg);
+        let msg = {"is_recording": msg_handler.is_recording, "id": msg_handler.cur_id};       
 
-        if (msg_handler.is_recording) {
-            let timestamp = this.msg.timestamp;
-            chrome.tabs.captureVisibleTab().then((data_url) => {
-                download_img(data_url, timestamp, msg_handler.record_id_date, "new_page");
-            });
-        }
+        chrome.history.getVisits(
+            {"url": this.msg.url}, 
+            (results) => {
+                if (results.length == 0) {
+                    return;
+                }
+                let item = results[results.length-1];
+                console.log(results);
+                console.log(item);
+                console.log(item.transition);
+
+                let trans_type = item.transition;
+                if (trans_type == "typed" 
+                || trans_type == "auto_bookmark" 
+                || trans_type == "generated") {
+                    msg["alert"] = trans_type;
+                    sendResponse(msg);
+                    msg_handler.sended_msgs.push(msg);
+                    return;
+                }
+
+                if (trans_type == "reload") {
+                    this.trans_type = trans_type;
+                } else {
+                    this.trans_type = "other";
+                }
+                
+                console.log(this.trans_type);
+                if (msg_handler.is_recording) {
+                    let timestamp = this.msg.timestamp;
+                    chrome.tabs.captureVisibleTab().then((data_url) => {
+                        download_img(data_url, timestamp, msg_handler.record_id_date, "new_page");
+                    });
+                }
+
+                sendResponse(msg);
+                msg_handler.sended_msgs.push(msg);
+            }
+        );
     }
 }
 
