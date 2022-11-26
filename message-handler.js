@@ -56,25 +56,29 @@ export default class RecorderHandler {
         let timestamp = Date.now().valueOf();;
         let id_date = new Date(timestamp);
         let date_str = id_date.toISOString().replaceAll("-", "_").replaceAll(":", ".");
-        let json_filename = `record_${date_str}/log/${timestamp}.json`;
-        var _myArray = JSON.stringify(new_array , null, 4); //indentation in json format, human readable
+        
+        var simple_objects = [];
+        this.received_msgs.forEach(simplify_object);
+        
+        function simplify_object(value, index, array) {
+            var simple_object = new Object();
+            simple_object.data = value.msg.data;
+            delete simple_object.data.placeholder;
+            simple_object.event_type = value.event_type;
+            simple_object.timestamp = value.timestamp;
+            simple_object.url = value.url;
+            simple_objects.push(simple_object);
+        }
 
-        // console.log(_myArray);
+        // console.log(this.received_msgs);
+        // console.log(simple_objects);
+        console.log("sent", this.sended_msgs);
 
-
-        // var vLink = document.createElement('a'),
-        // var vBlob = new Blob([_myArray], {type: "octet/stream"});
-        // console.log("blob:", vBlob);
-
-        var url = "data:application/x-mimearchive;base64," + btoa(_myArray);
-        console.log(url);
-
-        // var vName = json_filename;
-        // var vUrl = get_json_url(vBlob)
-        // vLink.setAttribute('href', vUrl);
-        // vLink.setAttribute('download', vName );
-        // vLink.click();
-
+        var str_msgs = JSON.stringify(simple_objects, null, 4); //indentation in json format, human readable
+        let json_filename = `record_${date_str}/log/${timestamp}_actions.json`;
+        
+        var url = "data:application/x-mimearchive;base64," + btoa(str_msgs);
+        // console.log(url);
         chrome.downloads.download({
             filename: json_filename,
             url: url
@@ -82,37 +86,16 @@ export default class RecorderHandler {
             console.log("Downloaded!", downloadId, json_filename);
         });
 
-        // chrome.fileSystem.chooseEntry( {
-        //     type: 'saveFile',
-        //     suggestName: json_filename,
-        //     accepts: [
-        //         { description: 'Json files (*.json)', extensions: ['json']}
-        //     ],
-        //     acceptsAllTypes: true
-        // }, (fileEntry) => {
-        //     fileEntry.createWriter(function(fileWriter) {
+        var str_sent = JSON.stringify(this.sended_msgs, null, 4);
+        var url = "data:application/x-mimearchive;base64," + btoa(str_sent);
+        let send_filename = `record_${date_str}/log/${timestamp}_log.json`;
+        chrome.downloads.download({
+            filename: send_filename,
+            url: url
+        }).then((downloadId) => {
+            console.log("Downloaded!", downloadId, send_filename);
+        });
 
-        //         var truncated = false;
-          
-        //         fileWriter.onwriteend = function(e) {
-        //           if (!truncated) {
-        //             truncated = true;
-        //             // You need to explicitly set the file size to truncate
-        //             // any content that might have been there before
-        //             this.truncate(vBlob.size);
-        //             return;
-        //           }
-        //           console.log('Export to '+fileDisplayPath+' completed');
-        //         };
-          
-        //         fileWriter.onerror = function(e) {
-        //           console.log('Export failed: '+e.toString());
-        //         };
-          
-        //         fileWriter.write(vBlob);
-          
-        //       });
-        // });
         
         // this.sended_msgs.push.apply(this.sended_msgs, this.received_msgs);
         console.log("clearing this.received_msgs");
