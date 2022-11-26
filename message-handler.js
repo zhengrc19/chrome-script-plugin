@@ -52,6 +52,68 @@ export default class RecorderHandler {
         chrome.storage.local.set({'msgs': new_array}, function() {
             console.log("new msgs is stored");
         });
+        
+        let timestamp = Date.now().valueOf();;
+        let id_date = new Date(timestamp);
+        let date_str = id_date.toISOString().replaceAll("-", "_").replaceAll(":", ".");
+        let json_filename = `record_${date_str}/log/${timestamp}.json`;
+        var _myArray = JSON.stringify(new_array , null, 4); //indentation in json format, human readable
+
+        // console.log(_myArray);
+
+
+        // var vLink = document.createElement('a'),
+        // var vBlob = new Blob([_myArray], {type: "octet/stream"});
+        // console.log("blob:", vBlob);
+
+        var url = "data:application/x-mimearchive;base64," + btoa(_myArray);
+        console.log(url);
+
+        // var vName = json_filename;
+        // var vUrl = get_json_url(vBlob)
+        // vLink.setAttribute('href', vUrl);
+        // vLink.setAttribute('download', vName );
+        // vLink.click();
+
+        chrome.downloads.download({
+            filename: json_filename,
+            url: url
+        }).then((downloadId) => {
+            console.log("Downloaded!", downloadId, json_filename);
+        });
+
+        // chrome.fileSystem.chooseEntry( {
+        //     type: 'saveFile',
+        //     suggestName: json_filename,
+        //     accepts: [
+        //         { description: 'Json files (*.json)', extensions: ['json']}
+        //     ],
+        //     acceptsAllTypes: true
+        // }, (fileEntry) => {
+        //     fileEntry.createWriter(function(fileWriter) {
+
+        //         var truncated = false;
+          
+        //         fileWriter.onwriteend = function(e) {
+        //           if (!truncated) {
+        //             truncated = true;
+        //             // You need to explicitly set the file size to truncate
+        //             // any content that might have been there before
+        //             this.truncate(vBlob.size);
+        //             return;
+        //           }
+        //           console.log('Export to '+fileDisplayPath+' completed');
+        //         };
+          
+        //         fileWriter.onerror = function(e) {
+        //           console.log('Export failed: '+e.toString());
+        //         };
+          
+        //         fileWriter.write(vBlob);
+          
+        //       });
+        // });
+        
         // this.sended_msgs.push.apply(this.sended_msgs, this.received_msgs);
         console.log("clearing this.received_msgs");
         this.received_msgs.length = 0;
