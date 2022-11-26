@@ -14,7 +14,8 @@
         "storage",
         "pageCapture",
         "tabs",
-        "downloads"
+        "downloads",
+        "history"
     ],
     "action": {
         "default_title": "Settings",

@@ -241,6 +241,30 @@ function download_img(url, timestamp, id_date, suffix) {
     });
 }
 
+/**
+ * 
+ * @param {string} url 
+ * @param {number} timestamp
+ * @param {Date} id_date date of recode starting time, use as unique record id
+ * @param {string} suffix 
+ */
+function download_mhtml(url, timestamp, id_date, suffix) {
+    if (id_date == null) {
+        throw "null id_date!";
+    }
+    
+    let date_str = id_date.toISOString().replaceAll("-","_").replaceAll(":", ".");
+    let mhtml_filename = `record_${date_str}/mhtml/${timestamp}_${suffix}.mhtml`;
+
+    chrome.downloads.download({
+        filename: mhtml_filename,
+        url: url
+    }).then((downloadId) => {
+        console.log("downloaded!", downloadId, mhtml_filename);
+    });
+}
+
+
 class PluginMsgEvent {
     /**
      * @param {Object} msg
@@ -261,7 +285,7 @@ class PluginMsgEvent {
      * @param {RecorderHandler} msg_handler 
      * @param {*} sendResponse
      */
-     handle(msg_handler, sendResponse) {}
+     handle(msg_handler, sender, sendResponse) {}
 }
 
 class MsgRecoderEvent extends PluginMsgEvent {
@@ -277,7 +301,7 @@ class MsgRecoderEvent extends PluginMsgEvent {
      * @param {RecorderHandler} msg_handler 
      * @param {*} sendResponse
      */
-    handle(msg_handler, sendResponse) {
+    handle(msg_handler, sender, sendResponse) {
         let type = this.data.type;
         if(type == RecoderEventType.BEGIN) {
             if(msg_handler.is_recording) {
@@ -290,6 +314,13 @@ class MsgRecoderEvent extends PluginMsgEvent {
 
             chrome.tabs.captureVisibleTab().then((data_url) => {
                 download_img(data_url, timestamp, msg_handler.record_id_date, "st");
+            });
+
+            let tab_id = sender.tab.id;
+            chrome.pageCapture.saveAsMHTML({ tabId: tab_id}, async (blob) => {
+                const content = await blob.text();
+                const url = "data:application/x-mimearchive;base64," + btoa(content);
+                download_mhtml(url, timestamp, msg_handler.record_id_date, "");
             });
         }
         if(type === RecoderEventType.END) {
@@ -313,7 +344,7 @@ class MsgClickEvent extends PluginMsgEvent{
         check_msg_legality(ClickEventRule, this.data, msg);
     }
 
-    handle(msg_handler, sendResponse) {
+    handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
         chrome.tabs.captureVisibleTab().then((data_url) => {
             download_img(data_url, timestamp, msg_handler.record_id_date, "click");
@@ -330,7 +361,7 @@ class MsgInputEvent extends PluginMsgEvent {
         check_msg_legality(InputEventRule, this.data, msg);
     }
 
-    handle(msg_handler, sendResponse) {
+    handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
         chrome.tabs.captureVisibleTab().then((data_url) => {
             download_img(data_url, timestamp, msg_handler.record_id_date, "input");
@@ -344,23 +375,59 @@ class MsgContentInitEvent extends PluginMsgEvent {
      */
     constructor(msg) {
         super(msg);
+        this.trans_type = null;  // "reload", "forward", "backward", "other"
     }
 
     /**
      * @param {RecorderHandler} msg_handler 
      * @param {*} sendResponse
      */
-    handle(msg_handler, sendResponse) { 
-        let msg = {"is_recording": msg_handler.is_recording, "id": msg_handler.cur_id};
+    handle(msg_handler, sender, sendResponse) { 
+        let msg = {"is_recording": msg_handler.is_recording, "id": msg_handler.cur_id};       
         sendResponse(msg);
         msg_handler.sended_msgs.push(msg);
 
-        if (msg_handler.is_recording) {
-            let timestamp = this.msg.timestamp;
-            chrome.tabs.captureVisibleTab().then((data_url) => {
-                download_img(data_url, timestamp, msg_handler.record_id_date, "new_page");
-            });
-        }
+        chrome.history.getVisits(
+            {"url": this.msg.url}, 
+            async (results) => {
+                if (results.length == 0) {
+                    return;
+                }
+                let item = results[results.length-1];
+                console.log(results);
+                console.log(item);
+                console.log(item.transition);
+
+                let trans_type = item.transition;
+                if (trans_type == "typed" 
+                || trans_type == "auto_bookmark" 
+                || trans_type == "generated") {
+                    // TODO alert
+                    return;
+                }
+
+                if (trans_type == "reload") {
+                    this.trans_type = trans_type;
+                } else {
+                    this.trans_type = "other";
+                }
+                
+                console.log(this.trans_type);
+                if (msg_handler.is_recording) {
+                    let timestamp = this.msg.timestamp;
+                    let tab_id = sender.tab.id;
+                    chrome.tabs.captureVisibleTab().then((data_url) => {
+                        download_img(data_url, timestamp, msg_handler.record_id_date, "new_page");
+                    });
+                    chrome.pageCapture.saveAsMHTML({ tabId: tab_id}, async (blob) => {
+                        const content = await blob.text();
+                        const url = "data:application/x-mimearchive;base64," + btoa(content);
+                        download_mhtml(url, timestamp, msg_handler.record_id_date, "");
+                    });
+                }
+
+            }
+        );
     }
 }
 
@@ -373,7 +440,7 @@ class MsgScrollEvent extends PluginMsgEvent {
         check_msg_legality(ScrollEventRule, this.data, msg);
     }
 
-    handle(msg_handler, sendResponse) {
+    handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
         chrome.tabs.captureVisibleTab().then((data_url) => {
             download_img(data_url, timestamp, msg_handler.record_id_date, "scroll");
@@ -400,7 +467,7 @@ class MsgPasteEvent extends PluginMsgEvent {
         check_msg_legality(PasteEventRule, this.data, msg);
     }
 
-    handle(msg_handler, sendResponse) {
+    handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
         chrome.tabs.captureVisibleTab().then((data_url) => {
             download_img(data_url, timestamp, msg_handler.record_id_date, "paste");
@@ -452,8 +519,8 @@ export class Message {
      * @param {RecorderHandler} msg_handler 
      * @param {*} sendResponse
      */
-    handle(msg_handler, sendResponse) {
+    handle(msg_handler, sender, sendResponse) {
         msg_handler.received_msgs.push(this);
-        this.event.handle(msg_handler, sendResponse);
+        this.event.handle(msg_handler, sender, sendResponse);
     }
 }

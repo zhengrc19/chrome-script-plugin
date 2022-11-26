@@ -14,12 +14,12 @@ export default class RecorderHandler {
      * @param {Object} msg_obj
      * @param {*} sendResponse
      */
-    msg_callback(msg_obj, sendResponse) {
+    msg_callback(msg_obj, sender, sendResponse) {
         // console.log("received! ", msg_obj);
         let msg = new Message(msg_obj);
         console.log(msg);
         // console.log(msg.get_event());
-        msg.handle(this, sendResponse);
+        msg.handle(this, sender, sendResponse);
     }
 
     async store() {
