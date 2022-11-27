@@ -327,7 +327,7 @@ class MsgRecoderEvent extends PluginMsgEvent {
             if(!msg_handler.is_recording) {
                 throw "Isn't in recording!";
             }
-            msg_handler.store();
+            msg_handler.store(msg_handler.record_id_date);
             msg_handler.cur_id += 1;
             msg_handler.is_recording = false;
             msg_handler.record_id_date = null;

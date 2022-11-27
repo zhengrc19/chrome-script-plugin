@@ -22,10 +22,11 @@ export default class RecorderHandler {
         msg.handle(this, sender, sendResponse);
     }
 
-    async store() {
-        console.log("store history ...");
-        console.log(this.received_msgs);
-        console.log(this.sended_msgs);
+    async store(id_date) {
+        // console.log("store history ...");
+        // console.log(this.received_msgs);
+        // console.log(this.sended_msgs);
+        console.log("received id date", id_date);
         var new_array;
         function getStorageValuePromise(received_msgs) {
             return new Promise((resolve) => {
@@ -35,26 +36,26 @@ export default class RecorderHandler {
                     if (msgs == null) {
                         msgs = new Array();
                     }
-                    console.log("msgs beforehand");
-                    console.log(msgs);
-                    console.log(received_msgs);
+                    // console.log("msgs beforehand");
+                    // console.log(msgs);
+                    // console.log(received_msgs);
                     msgs.push.apply(msgs, received_msgs);
-                    console.log("msgs afterwards");
-                    console.log(msgs);
+                    // console.log("msgs afterwards");
+                    // console.log(msgs);
                     new_array = msgs;
                     resolve();
                 });
             });
         }
         await getStorageValuePromise(this.received_msgs);
-        console.log("array returned from chrome get");
-        console.log(new_array);
+        // console.log("array returned from chrome get");
+        // console.log(new_array);
         chrome.storage.local.set({'msgs': new_array}, function() {
             console.log("new msgs is stored");
         });
         
         let timestamp = Date.now().valueOf();;
-        let id_date = new Date(timestamp);
+        // let id_date = new Date(timestamp);
         let date_str = id_date.toISOString().replaceAll("-", "_").replaceAll(":", ".");
         
         var simple_objects = [];
@@ -72,7 +73,8 @@ export default class RecorderHandler {
 
         // console.log(this.received_msgs);
         // console.log(simple_objects);
-        console.log("sent", this.sended_msgs);
+        // console.log("sent", this.sended_msgs);
+        console.log("record id date", this.record_id_date);
 
         var str_msgs = JSON.stringify(simple_objects, null, 4); //indentation in json format, human readable
         let json_filename = `record_${date_str}/log/${timestamp}_actions.json`;
@@ -98,9 +100,9 @@ export default class RecorderHandler {
 
         
         // this.sended_msgs.push.apply(this.sended_msgs, this.received_msgs);
-        console.log("clearing this.received_msgs");
+        // console.log("clearing this.received_msgs");
         this.received_msgs.length = 0;
-        console.log(this.received_msgs);
+        // console.log(this.received_msgs);
         // console.log(this.sended_msgs);
     }
 }
