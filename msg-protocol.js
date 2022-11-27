@@ -275,10 +275,10 @@ class PluginMsgEvent {
     }
 
     /**
-     * @returns {string}
+     * @returns {object}
      */
-    toString() {
-        return `${this.data}`; 
+    toJson() {
+        return this.data;
     }
 
     /**
@@ -295,6 +295,7 @@ class MsgRecoderEvent extends PluginMsgEvent {
     constructor(msg) {
         super(msg);
         check_msg_legality(RecoderEventRule, this.data, msg);
+        this.legal = true;
     }
 
     /**
@@ -305,6 +306,7 @@ class MsgRecoderEvent extends PluginMsgEvent {
         let type = this.data.type;
         if(type == RecoderEventType.BEGIN) {
             if(msg_handler.is_recording) {
+                this.legal = false;
                 throw "Shouldn't in recording!";
             }
             let timestamp = this.msg.timestamp;
@@ -323,15 +325,18 @@ class MsgRecoderEvent extends PluginMsgEvent {
                 download_mhtml(url, timestamp, msg_handler.record_id_date, "");
             });
         }
-        if(type === RecoderEventType.END) {
+        else if(type === RecoderEventType.END) {
             if(!msg_handler.is_recording) {
+                this.legal = false;
                 throw "Isn't in recording!";
             }
-            msg_handler.store(msg_handler.record_id_date);
-            msg_handler.cur_id += 1;
-            msg_handler.is_recording = false;
-            msg_handler.record_id_date = null;
+            msg_handler.store(); 
         }
+        return true;
+    }
+
+    toJson() {
+        return this.legal? this.data : null;
     }
 }
 
@@ -366,6 +371,7 @@ class MsgInputEvent extends PluginMsgEvent {
         chrome.tabs.captureVisibleTab().then((data_url) => {
             download_img(data_url, timestamp, msg_handler.record_id_date, "input");
         });
+        return true;
     }
 }
 
@@ -375,7 +381,7 @@ class MsgContentInitEvent extends PluginMsgEvent {
      */
     constructor(msg) {
         super(msg);
-        this.trans_type = null;  // "reload", "forward", "backward", "other"
+        this.trans_type = null;  // "reload", "forward", "backward", "other", "ignore", "forbidden"
     }
 
     /**
@@ -389,8 +395,10 @@ class MsgContentInitEvent extends PluginMsgEvent {
 
         chrome.history.getVisits(
             {"url": this.msg.url}, 
-            async (results) => {
+            (results) => {
                 if (results.length == 0) {
+                    console.warn("visit not found! ");
+                    this.trans_type = "ignore";
                     return;
                 }
                 let item = results[results.length-1];
@@ -402,7 +410,8 @@ class MsgContentInitEvent extends PluginMsgEvent {
                 if (trans_type == "typed" 
                 || trans_type == "auto_bookmark" 
                 || trans_type == "generated") {
-                    // TODO alert
+                    console.warn("forbidden transition by user, to alert user later!");
+                    this.trans_type = "forbidden";
                     return;
                 }
 
@@ -428,6 +437,14 @@ class MsgContentInitEvent extends PluginMsgEvent {
 
             }
         );
+    }
+
+    /**
+     * @returns {Object}
+     */
+    toJson() {
+        console.assert(this.trans_type != null);
+        return this.trans_type == "ignore"? null: { "transition": this.trans_type }; 
     }
 }
 
@@ -486,6 +503,7 @@ export class Message {
         this.timestamp = msg.timestamp;
         this.url = msg.url;
         this.id = msg.id;
+        this.tab_id = null;
 
         if (this.event_type === MessageEventType.RecorderEvent) {
             this.event = new MsgRecoderEvent(msg);
@@ -505,14 +523,31 @@ export class Message {
     }
 
     /**
-     * @returns {MsgClickEvent | MsgRecoderEvent | MsgInputEvent | null}
+     * @returns {PluginMsgEvent | null}
      */
     get_event() {
         return this.event;
     }
 
-    toString() {
-        return JSON.stringify(this.msg);
+    /**
+     * @returns {Object}
+     */
+    toJson() {
+        console.assert(this.tab_id != null);
+        console.assert(this.event != null);
+        let ev_data = this.event.toJson();
+        if (ev_data == null) {
+            return null;
+        } else {
+            let ret = {
+                "event_type": this.event_type,
+                "timestamp": this.timestamp,
+                "tabId": this.tab_id,
+                "url": this.url,
+                "data": ev_data
+            }
+            return ret
+        }
     }
 
     /**
@@ -520,7 +555,27 @@ export class Message {
      * @param {*} sendResponse
      */
     handle(msg_handler, sender, sendResponse) {
-        msg_handler.received_msgs.push(this);
-        this.event.handle(msg_handler, sender, sendResponse);
+        this.tab_id = sender.tab.id;
+
+        if (this.event_type == MessageEventType.ContentInitEvent) {
+            this.event.handle(msg_handler, sender, sendResponse);
+            if (msg_handler.is_recording) {
+                msg_handler.received_msgs.push(this);
+            }
+        } else if (this.event_type == MessageEventType.RecorderEvent) {
+            if (this.id != msg_handler.cur_id) {
+                throw "ignore recoder msg because of illegal msg id!";
+            }
+
+            msg_handler.received_msgs.push(this);
+            this.event.handle(msg_handler, sender, sendResponse);
+        } else {
+            if(this.id != msg_handler.cur_id || !msg_handler.is_recording) {
+                throw "ignore action msg!";
+            }
+
+            this.event.handle(msg_handler, sender, sendResponse);
+            msg_handler.received_msgs.push(this);
+        }
     }
 }
