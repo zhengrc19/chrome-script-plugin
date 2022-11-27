@@ -450,9 +450,19 @@ function is_inject_el(el) {
     return is_inject_el(el.parentElement);
 }
 
-
+let moved = false;
+let clicked = false;
 /** Send recoder msg */
-recoder_button.addEventListener("click", function(event) {
+recoder_button.addEventListener("mouseup", function(event) {
+
+    clicked = false;
+
+    if (moved){
+        console.log("got into click but shouldn't!");
+        moved = false;
+        return;
+    }
+
     event.preventDefault();
 
     let timestamp = get_timestamp();
@@ -472,6 +482,19 @@ recoder_button.addEventListener("click", function(event) {
     chrome.runtime.sendMessage(
         build_record_msg(timestamp, is_start)
     );
+});
+
+recoder_button.addEventListener("mousedown", () => {
+    clicked = true;
+    console.log("clicked!");
+});
+
+recoder_button.addEventListener("mousemove", () => {
+    // console.log(clicked);
+    if (clicked) {
+        moved = true;
+        // console.log("moved!");
+    }
 });
 
 /* Listen all click event */
