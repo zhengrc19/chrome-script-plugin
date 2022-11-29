@@ -331,17 +331,6 @@ class MsgRecoderEvent extends PluginMsgEvent {
             let task_list = new CapTaskList([TaskType.Img, TaskType.MHTML], sender.tab.id, timestamp,  
                         msg_handler.record_id_date, sendResponse, "st");
             task_controller.push(task_list);
-
-            // chrome.tabs.captureVisibleTab().then((data_url) => {
-            //     download_img(data_url, timestamp, msg_handler.record_id_date, "st");
-            // });
-
-            // let tab_id = sender.tab.id;
-            // chrome.pageCapture.saveAsMHTML({ tabId: tab_id}, async (blob) => {
-            //     const content = await blob.text();
-            //     const url = "data:application/x-mimearchive;base64," + btoa(content);
-            //     download_mhtml(url, timestamp, msg_handler.record_id_date, "");
-            // });
         }
         else if(type === RecoderEventType.END) {
             if(!msg_handler.is_recording) {
@@ -404,7 +393,7 @@ class MsgContentInitEvent extends PluginMsgEvent {
      * @param {*} sendResponse
      */
     handle(msg_handler, sender, sendResponse) { 
-        let msg = {"is_recording": msg_handler.is_recording, "id": msg_handler.cur_id, "transition": null}; 
+        let msg = {"is_recording": msg_handler.is_recording, "record_id": msg_handler.cur_id, "transition": null}; 
         let send = () => {
             msg["transition"] = this.trans_type;
             sendResponse(msg);
@@ -440,20 +429,27 @@ class MsgContentInitEvent extends PluginMsgEvent {
                 } else {
                     this.trans_type = "other";
                 }
-                send();
                 
                 console.log(this.trans_type);
                 if (msg_handler.is_recording) {
                     let timestamp = this.msg.timestamp;
                     let tab_id = sender.tab.id;
-                    chrome.tabs.captureVisibleTab().then((data_url) => {
-                        download_img(data_url, timestamp, msg_handler.record_id_date, "new_page");
-                    });
-                    chrome.pageCapture.saveAsMHTML({ tabId: tab_id}, async (blob) => {
-                        const content = await blob.text();
-                        const url = "data:application/x-mimearchive;base64," + btoa(content);
-                        download_mhtml(url, timestamp, msg_handler.record_id_date, "");
-                    });
+
+                    msg["transition"] = this.trans_type;
+                    let task_list = new CapTaskList([TaskType.Img, TaskType.MHTML], tab_id, timestamp,  
+                        msg_handler.record_id_date, sendResponse, "new_page");
+                    task_list.set_boot_info(msg);
+                    task_controller.push(task_list);
+                    // chrome.tabs.captureVisibleTab().then((data_url) => {
+                    //     download_img(data_url, timestamp, msg_handler.record_id_date, "new_page");
+                    // });
+                    // chrome.pageCapture.saveAsMHTML({ tabId: tab_id}, async (blob) => {
+                    //     const content = await blob.text();
+                    //     const url = "data:application/x-mimearchive;base64," + btoa(content);
+                    //     download_mhtml(url, timestamp, msg_handler.record_id_date, "");
+                    // });
+                } else {
+                    send();
                 }
 
             }

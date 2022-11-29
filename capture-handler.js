@@ -46,10 +46,23 @@ class CaptureTask {
         this.sendResponse = sendResponse;
 
         this.status = TaskStatus.Wait;
+        this.boot_info = null;
+    }
+
+    /**
+     * @param {Object} msg 
+     */
+    set_boot_info(msg) {
+        this.boot_info = msg;
     }
 
     boot()  {
         let msg = build_mask_msg(this.task_id, this.timestamp, MaskMsgType.MaskInquery);
+        msg = this.boot_info == null? msg :{
+            ...msg,
+            ...this.boot_info
+        }
+        console.log(msg);
         this.sendResponse(msg);
     }
 

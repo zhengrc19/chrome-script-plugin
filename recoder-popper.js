@@ -385,32 +385,6 @@ pop_button.addEventListener("click", (event) => {
     }
 });
 
-/* send content start msg */
-var init_is_recording;
-chrome.runtime.sendMessage(
-    build_init_msg(get_timestamp()),
-    callback = (response) => {
-        console.log(response);
-        init_is_recording = response["is_recording"];
-        let id = response["id"];
-        record_id = id;
-
-        if (init_is_recording) {
-            recoder_change(init_is_recording);
-        }
-        let trans_type = response["transition"];
-        console.log(trans_type);
-        if(trans_type == "forbidden" && init_is_recording) {
-            window.alert("禁止通过网址输入进行跳转，请关闭此页面以继续录制！");
-            return;
-        }
-        if(trans_type != "ignore") {
-            unhide_element(float_recoder);
-        } 
-    }
-);
-
-
 /** global variables */
 /**
  * return true if in recording process
@@ -548,6 +522,43 @@ function get_mask_callback(timestamp, finish_hook=null) {
         )
     };
 }
+
+/* send content start msg */
+var init_is_recording;
+var init_timestamp = get_timestamp();
+chrome.runtime.sendMessage(
+    build_init_msg(init_timestamp),
+    callback = (response) => {
+        init_is_recording = response["is_recording"];
+        let id = response["record_id"];
+        let trans_type = response["transition"];
+
+        myAssert(id != null);
+        myAssert(init_is_recording != null);
+        myAssert(trans_type != null);
+        console.log(init_is_recording, id, trans_type);
+        console.log(response);
+        
+        record_id = id;
+
+        if(init_is_recording ) {
+            if(trans_type == "forbidden") {
+                window.alert("禁止通过网址输入进行跳转，请关闭此页面以继续录制！");
+                return;
+            } else if(trans_type == "ignore") {
+                return;
+            }
+
+            get_mask_callback(init_timestamp, 
+                () => { recoder_change(init_is_recording); }
+            )(response);
+        } else {
+            if(trans_type != "ignore") {
+                unhide_element(float_recoder);
+            }
+        }
+    }
+);
 
 
 /** Send recoder msg */
