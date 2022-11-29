@@ -51,6 +51,9 @@ const RecoderEventRule = {
     type: {
         type: Number,
         enum: RecoderEventType
+    },
+    bboxes: {
+        type: Array
     }
 }
 
@@ -324,6 +327,19 @@ class MsgRecoderEvent extends PluginMsgEvent {
                 const url = "data:application/x-mimearchive;base64," + btoa(content);
                 download_mhtml(url, timestamp, msg_handler.record_id_date, "");
             });
+            
+            // console.log("All bboxes:")
+            // console.log(this.data.bboxes);
+            let bboxes = JSON.stringify(this.data.bboxes, null, 4);
+            let date_str = msg_handler.record_id_date.toISOString().replaceAll("-", "_").replaceAll(":", ".");
+            let bbox_url = "data:application/x-mimearchive;base64," + btoa(unescape(encodeURIComponent(bboxes)));
+            let bbox_fname = `record_${date_str}/bbox/${timestamp}.json`;
+            chrome.downloads.download({
+                filename: bbox_fname,
+                url: bbox_url
+            }).then((downloadId) => {
+                console.log("Downloaded bbox!", downloadId, bbox_fname);
+            });
         }
         else if(type === RecoderEventType.END) {
             if(!msg_handler.is_recording) {
@@ -336,7 +352,7 @@ class MsgRecoderEvent extends PluginMsgEvent {
     }
 
     toJson() {
-        return this.legal? this.data : null;
+        return this.legal? { type: this.data.type } : null;
     }
 }
 

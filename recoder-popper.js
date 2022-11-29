@@ -73,6 +73,32 @@ function build_click_msg(
     return build_msg(MessageEventType.ClickEvent, timestamp, data);
 }
 
+function iterate_children(
+    element,
+    prev_str,
+    idx
+) {
+    let obj = new Object();
+    obj.id = element.id;
+    obj.level = prev_str + idx;
+    obj.rectangle = element.getBoundingClientRect();
+    obj.children = [];
+    for (var i = 0; i < element.children.length; i++) {
+        obj.children.push(iterate_children(element.children[i], obj.level + '-', i));
+    }
+    return obj;
+}
+
+// function build_bbox_msg(
+//     timestamp
+// ) {
+//     let bboxes = [];
+//     for (var i = 0; i < document.body.children.length; i++) {
+//         bboxes.push(iterate_children(document.body.children[i]));
+//     }
+//     return build_msg(MessageEventType.BBoxEvent, timestamp, bboxes);
+// }
+
 /**
  * @param {number} timestamp 
  * @param {boolean} is_start
@@ -82,8 +108,13 @@ function build_record_msg(
     timestamp, 
     is_start
 ) {
+    let bboxes = [];
+    for (var i = 0; i < document.body.children.length; i++) {
+        bboxes.push(iterate_children(document.body.children[i], '', i));
+    }
     let data = {
-        "type": is_start? RecoderEventType.BEGIN: RecoderEventType.END
+        "type": is_start? RecoderEventType.BEGIN: RecoderEventType.END,
+        "bboxes": bboxes
     };
     return build_msg(MessageEventType.RecorderEvent, timestamp, data);
 }
