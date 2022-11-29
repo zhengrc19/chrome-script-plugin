@@ -161,11 +161,17 @@ function build_paste_msg(
     return build_msg(MessageEventType.PasteEvent, timestamp, data);
 }
 
+// var all_pop_windows = document.createElement("div");
+// all_pop_windows.classList.add("go-top");
+// all_pop_windows.id = "all-pop-window";
+// document.body.appendChild(all_pop_windows);
+
 /* Pop floating window */
 var float_recoder = document.createElement("div");
 float_recoder.classList.add("go-top");
 float_recoder.id = "ext-recoder-window"
 float_recoder.innerHTML = '<a href="#" id="ext-recoder-href" role="button">开始<br/>录制</a>';
+// all_pop_windows.appendChild(float_recoder);
 document.body.appendChild(float_recoder);
 
 recoder_button = float_recoder.children[0];
@@ -196,6 +202,7 @@ dropdown_actions.classList.add("dropdown-menu");
 
 action_panel.appendChild(pop_button);
 action_panel.appendChild(dropdown_actions);
+// all_pop_windows.appendChild(action_panel);
 document.body.appendChild(action_panel);
 
 var scroll_window = document.createElement("div");
@@ -250,8 +257,11 @@ paste_window.innerHTML = ' <p>请复制想要的内容，点击复制后，复�
     </div> \
 </form>'
 
+// all_pop_windows.appendChild(scroll_window);
 document.body.appendChild(scroll_window);
+// all_pop_windows.appendChild(text_window);
 document.body.appendChild(text_window);
+// all_pop_windows.appendChild(paste_window);
 document.body.appendChild(paste_window);
 
 var scroll_form = scroll_window.children[1];
@@ -677,3 +687,50 @@ paste_form.addEventListener("submit", (event) => {
     let el = document.getElementById("ext-paste");
     el.value = null;
 });
+
+function dragElement(elmnt) {
+    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    if (document.getElementById(elmnt.id + "header")) {
+      /* if present, the header is where you move the DIV from:*/
+      document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown;
+    } else {
+      /* otherwise, move the DIV from anywhere inside the DIV:*/
+      elmnt.onmousedown = dragMouseDown;
+    }
+  
+    function dragMouseDown(e) {
+      e = e || window.event;
+      e.preventDefault();
+      // get the mouse cursor position at startup:
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.onmouseup = closeDragElement;
+      // call a function whenever the cursor moves:
+      document.onmousemove = elementDrag;
+    }
+  
+    function elementDrag(e) {
+      e = e || window.event;
+      e.preventDefault();
+      // calculate the new cursor position:
+      pos1 = pos3 - e.clientX;
+      pos2 = pos4 - e.clientY;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      // set the element's new position:
+      elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+      elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+    }
+  
+    function closeDragElement() {
+      /* stop moving when mouse button is released:*/
+      document.onmouseup = null;
+      document.onmousemove = null;
+    }
+}
+
+dragElement(document.getElementById("ext-recoder-window"));
+dragElement(document.getElementById("panel"));
+dragElement(document.getElementById("scroll-window"));
+dragElement(document.getElementById("text-window"));
+dragElement(document.getElementById("paste-window"));
