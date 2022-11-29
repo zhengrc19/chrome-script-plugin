@@ -39,11 +39,12 @@ export default class RecorderHandler {
 
         // console.log(this.received_msgs);
         // console.log(simple_objects);
-        console.log("sent", this.sended_msgs);
+        // console.log("sent", this.sended_msgs);
+        console.log("record id date", this.record_id_date);
 
         let str_msgs = JSON.stringify(simple_objects, null, 4); //indentation in json format, human readable
         console.log(str_msgs);
-        let json_url = "data:application/x-mimearchive;base64," + btoa(str_msgs);
+        let json_url = "data:application/x-mimearchive;base64," + btoa(unescape(encodeURIComponent(str_msgs)));
         let json_filename = `record_${date_str}/log/actions.json`;
         chrome.downloads.download({
             filename: json_filename,
@@ -53,7 +54,7 @@ export default class RecorderHandler {
         });
 
         let str_sent = JSON.stringify(this.sended_msgs, null, 4);
-        let send_url = "data:application/x-mimearchive;base64," + btoa(str_sent);
+        let send_url = "data:application/x-mimearchive;base64," + btoa(unescape(encodeURIComponent(str_sent)));
         let send_filename = `record_${date_str}/log/log.json`;
         chrome.downloads.download({
             filename: send_filename,
