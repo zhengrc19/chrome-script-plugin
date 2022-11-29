@@ -1,5 +1,5 @@
 import { FieldMissingErr, IllegalFieldTypeErr} from "./errors.js";
-import { task_controller, MaskMsgType, ImgCapTask } from "./capture-handler.js";
+import { task_controller, MaskMsgType, ImgCapTask, MHTMLCapTask, CapTaskList, TaskType } from "./capture-handler.js";
 
 export const MessageEventType = {
     ContentInitEvent: 0,
@@ -328,16 +328,20 @@ class MsgRecoderEvent extends PluginMsgEvent {
             
             task_controller.start();
 
-            chrome.tabs.captureVisibleTab().then((data_url) => {
-                download_img(data_url, timestamp, msg_handler.record_id_date, "st");
-            });
+            let task_list = new CapTaskList([TaskType.Img, TaskType.MHTML], sender.tab.id, timestamp,  
+                        msg_handler.record_id_date, sendResponse, "st");
+            task_controller.push(task_list);
 
-            let tab_id = sender.tab.id;
-            chrome.pageCapture.saveAsMHTML({ tabId: tab_id}, async (blob) => {
-                const content = await blob.text();
-                const url = "data:application/x-mimearchive;base64," + btoa(content);
-                download_mhtml(url, timestamp, msg_handler.record_id_date, "");
-            });
+            // chrome.tabs.captureVisibleTab().then((data_url) => {
+            //     download_img(data_url, timestamp, msg_handler.record_id_date, "st");
+            // });
+
+            // let tab_id = sender.tab.id;
+            // chrome.pageCapture.saveAsMHTML({ tabId: tab_id}, async (blob) => {
+            //     const content = await blob.text();
+            //     const url = "data:application/x-mimearchive;base64," + btoa(content);
+            //     download_mhtml(url, timestamp, msg_handler.record_id_date, "");
+            // });
         }
         else if(type === RecoderEventType.END) {
             if(!msg_handler.is_recording) {
@@ -365,9 +369,7 @@ class MsgClickEvent extends PluginMsgEvent{
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-
-        let send = (msg) => sendResponse(msg);
-        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, send, "click");
+        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, sendResponse, "click");
         task_controller.push(img_task);
     }
 }
@@ -383,10 +385,8 @@ class MsgInputEvent extends PluginMsgEvent {
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-        chrome.tabs.captureVisibleTab().then((data_url) => {
-            download_img(data_url, timestamp, msg_handler.record_id_date, "input");
-        });
-        return true;
+        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, sendResponse, "input");
+        task_controller.push(img_task);
     }
 }
 
@@ -480,9 +480,8 @@ class MsgScrollEvent extends PluginMsgEvent {
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-        chrome.tabs.captureVisibleTab().then((data_url) => {
-            download_img(data_url, timestamp, msg_handler.record_id_date, "scroll");
-        });
+        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, sendResponse, "scroll");
+        task_controller.push(img_task);
     }
 }
 
@@ -507,9 +506,8 @@ class MsgPasteEvent extends PluginMsgEvent {
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-        chrome.tabs.captureVisibleTab().then((data_url) => {
-            download_img(data_url, timestamp, msg_handler.record_id_date, "paste");
-        });
+        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, sendResponse, "paste");
+        task_controller.push(img_task);
     }
 }
 

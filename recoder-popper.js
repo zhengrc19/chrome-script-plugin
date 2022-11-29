@@ -509,6 +509,46 @@ function is_inject_el(el) {
     return is_inject_el(el.parentElement);
 }
 
+/**
+ * @param {number} timestamp 
+ * @param {() => void} finish_hook
+ * @returns {(Object) => void}
+ */
+function get_mask_callback(timestamp, finish_hook=null) {
+    return async (response) => {
+        /**
+         * response ={
+                "id": task_id,
+                "timestamp": timestamp,
+                "type": type
+            }
+         */
+        console.log(response);
+        let task_id = response["id"];
+        let type = response["type"]
+        myAssert(task_id != null);
+        myAssert(response["timestamp"] == timestamp);
+        myAssert(type == MaskMsgType.MaskInquery);
+
+        mask();
+        await new Promise(r => setTimeout(r, 100)); // wait a little while to make sure mask is done
+        chrome.runtime.sendMessage(
+            build_mask_ready_msg(task_id, timestamp),
+            callback=(response) => {
+                let id_in = response["id"];
+                let type_in = response["type"];
+                myAssert(id_in == task_id);
+                myAssert(type_in == MaskMsgType.MaskRelease);
+                unmask();
+
+                if(finish_hook != null) {
+                    finish_hook();
+                }
+            }
+        )
+    };
+}
+
 
 /** Send recoder msg */
 recoder_button.addEventListener("click", function(event) {
@@ -529,7 +569,8 @@ recoder_button.addEventListener("click", function(event) {
     console.log("recording action: ", timestamp, is_start);
 
     chrome.runtime.sendMessage(
-        build_record_msg(timestamp, is_start)
+        build_record_msg(timestamp, is_start),
+        callback= is_start? get_mask_callback(timestamp): null
     );
 });
 
@@ -562,33 +603,7 @@ document.body.addEventListener("click", function(event) {
 
     chrome.runtime.sendMessage(
         build_click_msg(timestamp, event.type, selector, event.offsetX, event.offsetY, event.pageX, event.pageY),
-        callback=(response) => {
-            /**
-             * response ={
-                    "id": task_id,
-                    "timestamp": timestamp,
-                    "type": type
-                }
-             */
-            console.log(response);
-            let task_id = response["id"];
-            let type = response["type"]
-            myAssert(task_id != null);
-            myAssert(response["timestamp"] == timestamp);
-            myAssert(type == MaskMsgType.MaskInquery);
-
-            mask();
-            chrome.runtime.sendMessage(
-                build_mask_ready_msg(task_id, timestamp),
-                callback=(response) => {
-                    let id_in = response["id"];
-                    let type_in = response["type"];
-                    myAssert(id_in == task_id);
-                    myAssert(type_in == MaskMsgType.MaskRelease);
-                    unmask();
-                }
-            )
-        }
+        callback=get_mask_callback(timestamp)
     );
 });
 
@@ -616,7 +631,8 @@ for (let i = 0; i < input_list.length; i++) {
         console.assert(document.querySelector(selector) == ev.target);
 
         chrome.runtime.sendMessage(
-            build_input_msg(timestamp, selector, current_text)
+            build_input_msg(timestamp, selector, current_text),
+            callback=get_mask_callback(timestamp)
         );
     });
 }
@@ -672,7 +688,8 @@ scroll_form.addEventListener("submit", async (event) => {
     let timestamp = get_timestamp();
     await new Promise(r => setTimeout(r, 100)); // wait a little while to make sure scroll is done
     chrome.runtime.sendMessage(
-        build_scroll_msg(timestamp, x, y)
+        build_scroll_msg(timestamp, x, y),
+        callback=get_mask_callback(timestamp)
     );    
 });
 
@@ -732,10 +749,10 @@ paste_form.addEventListener("submit", (event) => {
 
     let timestamp = get_timestamp();
     chrome.runtime.sendMessage(
-        build_paste_msg(timestamp, selection_data)
+        build_paste_msg(timestamp, selection_data),
+        callback=get_mask_callback(timestamp, ()=>window.alert("提交成功！"))
     );
-
-    window.alert("提交成功！");
+    
     selection_data = null;
     let el = document.getElementById("ext-paste");
     el.value = null;

@@ -149,7 +149,7 @@ export class MHTMLCapTask extends CaptureTask {
     }
 
     async run() {
-        await chrome.pageCapture.saveAsMHTML({ tabId: tab_id}, async (blob) => {
+        await chrome.pageCapture.saveAsMHTML({ tabId: this.tab_id}, async (blob) => {
             const content = await blob.text();
             const url = "data:application/x-mimearchive;base64," + btoa(content);
             download_mhtml(url, this.timestamp, this.id_date, "");  // DO NOT wait for download
