@@ -1,5 +1,21 @@
 console.log("popping recoder ...");
 
+/**
+ * @param {boolean} cond 
+ */
+function myAssert(cond) {
+    console.assert(cond);
+    if(!cond) {
+        throw "Assertation Error!";
+    }
+}
+
+const MaskMsgType = {
+    MaskInquery: 0,
+    MaskReady: 1,
+    MaskRelease: 2
+}
+
 
 /* msg buiding funcs */
 const MessageEventType = {
@@ -9,7 +25,8 @@ const MessageEventType = {
     InputEvent: 3,
     ScrollEvent: 4,
     AbstractEvent: 5,
-    PasteEvent: 6
+    PasteEvent: 6,
+    MaskEvent: 7
 };
 
 const RecoderEventType = {
@@ -161,9 +178,24 @@ function build_paste_msg(
     return build_msg(MessageEventType.PasteEvent, timestamp, data);
 }
 
+/**
+ * @param {number} task_id 
+ * @param {number} timestamp 
+ * @returns {Object}
+ */
+ function build_mask_ready_msg(task_id, timestamp) {
+    let data = {
+        "id": task_id,
+        // "timestamp": timestamp,
+        "type": MaskMsgType.MaskReady
+    }
+    return build_msg(MessageEventType.MaskEvent, timestamp, data);
+}
+
 /* Pop floating window */
 var float_recoder = document.createElement("div");
 float_recoder.classList.add("go-top");
+float_recoder.classList.add("hidden");
 float_recoder.id = "ext-recoder-window"
 float_recoder.innerHTML = '<a href="#" id="ext-recoder-href" role="button">开始<br/>录制</a>';
 document.body.appendChild(float_recoder);
@@ -294,6 +326,24 @@ function hide_element(el) {
     }
  }
 
+ /**
+  * mask all injected elements
+  */
+ function mask() {
+    hide_all_windows();
+    hide_element(float_recoder);
+    hide_element(action_panel);
+ }
+
+ /**
+  * unmask all elements
+  */
+function unmask() {
+    console.assert(is_recording());
+    unhide_element(float_recoder);
+    unhide_element(action_panel);
+}
+
 
 /**
  * @param {boolean} is_recording 
@@ -348,6 +398,15 @@ chrome.runtime.sendMessage(
         if (init_is_recording) {
             recoder_change(init_is_recording);
         }
+        let trans_type = response["transition"];
+        console.log(trans_type);
+        if(trans_type == "forbidden" && init_is_recording) {
+            window.alert("禁止通过网址输入进行跳转，请关闭此页面以继续录制！");
+            return;
+        }
+        if(trans_type != "ignore") {
+            unhide_element(float_recoder);
+        } 
     }
 );
 
@@ -502,7 +561,34 @@ document.body.addEventListener("click", function(event) {
     console.assert(document.querySelector(selector) == event.target); // assert selector is right
 
     chrome.runtime.sendMessage(
-        build_click_msg(timestamp, event.type, selector, event.offsetX, event.offsetY, event.pageX, event.pageY)
+        build_click_msg(timestamp, event.type, selector, event.offsetX, event.offsetY, event.pageX, event.pageY),
+        callback=(response) => {
+            /**
+             * response ={
+                    "id": task_id,
+                    "timestamp": timestamp,
+                    "type": type
+                }
+             */
+            console.log(response);
+            let task_id = response["id"];
+            let type = response["type"]
+            myAssert(task_id != null);
+            myAssert(response["timestamp"] == timestamp);
+            myAssert(type == MaskMsgType.MaskInquery);
+
+            mask();
+            chrome.runtime.sendMessage(
+                build_mask_ready_msg(task_id, timestamp),
+                callback=(response) => {
+                    let id_in = response["id"];
+                    let type_in = response["type"];
+                    myAssert(id_in == task_id);
+                    myAssert(type_in == MaskMsgType.MaskRelease);
+                    unmask();
+                }
+            )
+        }
     );
 });
 

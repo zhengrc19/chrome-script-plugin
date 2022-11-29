@@ -8,5 +8,6 @@ var handler = new RecorderHandler();
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log(message);
     handler.msg_callback(message, sender, sendResponse);
+    return true; // sendResponse open for async
 });
 

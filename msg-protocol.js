@@ -1,4 +1,5 @@
 import { FieldMissingErr, IllegalFieldTypeErr} from "./errors.js";
+import { task_controller, MaskMsgType, ImgCapTask } from "./capture-handler.js";
 
 export const MessageEventType = {
     ContentInitEvent: 0,
@@ -7,7 +8,8 @@ export const MessageEventType = {
     InputEvent: 3,
     ScrollEvent: 4,
     AbstractEvent: 5,
-    PasteEvent: 6
+    PasteEvent: 6,
+    MaskEvent: 7
 };
 
 const RecoderEventType = {
@@ -156,6 +158,16 @@ const PasteEventRule = {
     },
     text: {
         type: String
+    }
+}
+
+const MaskEventRule = {
+    id: {
+        type: Number
+    },
+    type: {
+        type: Number,
+        enum: MaskMsgType
     }
 }
 
@@ -313,6 +325,8 @@ class MsgRecoderEvent extends PluginMsgEvent {
 
             msg_handler.is_recording = true;
             msg_handler.record_id_date = new Date(timestamp);
+            
+            task_controller.start();
 
             chrome.tabs.captureVisibleTab().then((data_url) => {
                 download_img(data_url, timestamp, msg_handler.record_id_date, "st");
@@ -351,9 +365,10 @@ class MsgClickEvent extends PluginMsgEvent{
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-        chrome.tabs.captureVisibleTab().then((data_url) => {
-            download_img(data_url, timestamp, msg_handler.record_id_date, "click");
-        });
+
+        let send = (msg) => sendResponse(msg);
+        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, send, "click");
+        task_controller.push(img_task);
     }
 }
 
@@ -389,9 +404,12 @@ class MsgContentInitEvent extends PluginMsgEvent {
      * @param {*} sendResponse
      */
     handle(msg_handler, sender, sendResponse) { 
-        let msg = {"is_recording": msg_handler.is_recording, "id": msg_handler.cur_id};       
-        sendResponse(msg);
-        msg_handler.sended_msgs.push(msg);
+        let msg = {"is_recording": msg_handler.is_recording, "id": msg_handler.cur_id, "transition": null}; 
+        let send = () => {
+            msg["transition"] = this.trans_type;
+            sendResponse(msg);
+            msg_handler.sended_msgs.push(msg);
+        };
 
         chrome.history.getVisits(
             {"url": this.msg.url}, 
@@ -399,6 +417,7 @@ class MsgContentInitEvent extends PluginMsgEvent {
                 if (results.length == 0) {
                     console.warn("visit not found! ");
                     this.trans_type = "ignore";
+                    send();
                     return;
                 }
                 let item = results[results.length-1];
@@ -412,6 +431,7 @@ class MsgContentInitEvent extends PluginMsgEvent {
                 || trans_type == "generated") {
                     console.warn("forbidden transition by user, to alert user later!");
                     this.trans_type = "forbidden";
+                    send();
                     return;
                 }
 
@@ -420,6 +440,7 @@ class MsgContentInitEvent extends PluginMsgEvent {
                 } else {
                     this.trans_type = "other";
                 }
+                send();
                 
                 console.log(this.trans_type);
                 if (msg_handler.is_recording) {
@@ -492,6 +513,22 @@ class MsgPasteEvent extends PluginMsgEvent {
     }
 }
 
+class MsgMaskEvent extends PluginMsgEvent {
+    /**
+     * @param {Object} msg 
+     */
+     constructor(msg) {
+        super(msg);
+        check_msg_legality(MaskEventRule, this.data, msg);
+        this.task_id = this.data["id"];
+        this.type = this.data["type"];
+    }
+
+    toJson() {
+        return null;
+    }
+}
+
 export class Message {
     /**
      * @param {Object} msg 
@@ -519,6 +556,8 @@ export class Message {
             this.event = new MsgAbstractEvent(msg);
         } else if(this.event_type == MessageEventType.PasteEvent) {
             this.event = new MsgPasteEvent(msg);
+        } else if(this.event_type == MessageEventType.MaskEvent) {
+            this.event = new MsgMaskEvent(msg);
         }
     }
 
@@ -569,6 +608,9 @@ export class Message {
 
             msg_handler.received_msgs.push(this);
             this.event.handle(msg_handler, sender, sendResponse);
+        } else if (this.event_type == MessageEventType.MaskEvent) {
+            task_controller.mask_msg_handler(this, sendResponse);
+            msg_handler.received_msgs.push(this);
         } else {
             if(this.id != msg_handler.cur_id || !msg_handler.is_recording) {
                 throw "ignore action msg!";
