@@ -53,9 +53,6 @@ const RecoderEventRule = {
     type: {
         type: Number,
         enum: RecoderEventType
-    },
-    bboxes: {
-        type: Array
     }
 }
 
@@ -334,19 +331,6 @@ class MsgRecoderEvent extends PluginMsgEvent {
             let task_list = new CapTaskList([TaskType.Img, TaskType.MHTML], sender.tab.id, timestamp,  
                         msg_handler.record_id_date, sendResponse, "st");
             task_controller.push(task_list);
-
-            // console.log("All bboxes:")
-            // console.log(this.data.bboxes);
-            let bboxes = JSON.stringify(this.data.bboxes, null, 4);
-            let date_str = msg_handler.record_id_date.toISOString().replaceAll("-", "_").replaceAll(":", ".");
-            let bbox_url = "data:application/x-mimearchive;base64," + btoa(unescape(encodeURIComponent(bboxes)));
-            let bbox_fname = `record_${date_str}/bbox/${timestamp}.json`;
-            chrome.downloads.download({
-                filename: bbox_fname,
-                url: bbox_url
-            }).then((downloadId) => {
-                console.log("Downloaded bbox!", downloadId, bbox_fname);
-            });
         }
         else if(type === RecoderEventType.END) {
             if(!msg_handler.is_recording) {
@@ -409,7 +393,12 @@ class MsgContentInitEvent extends PluginMsgEvent {
      * @param {*} sendResponse
      */
     handle(msg_handler, sender, sendResponse) { 
-        let msg = {"is_recording": msg_handler.is_recording, "record_id": msg_handler.cur_id, "transition": null}; 
+        let msg = {
+            "is_recording": msg_handler.is_recording, 
+            "record_id": msg_handler.cur_id, 
+            "record_timestamp": msg_handler.record_id_date == null? null : msg_handler.record_id_date.valueOf(),
+            "transition": null
+        }; 
         let send = () => {
             msg["transition"] = this.trans_type;
             sendResponse(msg);

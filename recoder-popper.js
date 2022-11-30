@@ -115,13 +115,8 @@ function build_record_msg(
     timestamp, 
     is_start
 ) {
-    let bboxes = [];
-    for (var i = 0; i < document.body.children.length; i++) {
-        bboxes.push(iterate_children(document.body.children[i], '', i));
-    }
     let data = {
         "type": is_start? RecoderEventType.BEGIN: RecoderEventType.END,
-        "bboxes": bboxes
     };
     return build_msg(MessageEventType.RecorderEvent, timestamp, data);
 }
@@ -553,12 +548,36 @@ function get_mask_callback(timestamp, finish_hook=null) {
 /* send content start msg */
 var init_is_recording;
 var init_timestamp = get_timestamp();
+var record_id_date = null;
+
+/**
+ * @param {number} timestamp 
+ */
+async function download_bbox(timestamp) {
+    myAssert(record_id_date != null);
+    let bboxes = [];
+    for (var i = 0; i < document.body.children.length; i++) {
+        bboxes.push(iterate_children(document.body.children[i], '', i));
+    }
+
+    let bboxes_str = JSON.stringify(bboxes, null, 4);
+    let date_str = record_id_date.toISOString().replaceAll("-", "_").replaceAll(":", ".");
+    let bbox_url = "data:application/json;base64," + btoa(unescape(encodeURIComponent(bboxes_str)));
+    let bbox_fname = `record_${date_str}/bbox/${timestamp}.json`;
+
+    let a = document.createElement("a"); //Create <a>
+    a.href = bbox_url
+    a.download = bbox_fname; //File name Here
+    a.click();
+}
+
 chrome.runtime.sendMessage(
     build_init_msg(init_timestamp),
     callback = (response) => {
         init_is_recording = response["is_recording"];
         let id = response["record_id"];
         let trans_type = response["transition"];
+        let _date = response["record_timestamp"];  // may be null
 
         myAssert(id != null);
         myAssert(init_is_recording != null);
@@ -576,8 +595,13 @@ chrome.runtime.sendMessage(
                 return;
             }
 
+            record_id_date = new Date(_date);
+
             get_mask_callback(init_timestamp, 
-                () => { recoder_change(init_is_recording); }
+                () => { 
+                    recoder_change(init_is_recording); 
+                    download_bbox(init_timestamp);
+                }
             )(response);
         } else {
             if(trans_type != "ignore") {
@@ -619,7 +643,10 @@ recoder_button.addEventListener("mouseup", function(event) {
 
     chrome.runtime.sendMessage(
         build_record_msg(timestamp, is_start),
-        callback= is_start? get_mask_callback(timestamp): null
+        callback= is_start? get_mask_callback(timestamp, () => {
+            record_id_date = new Date(timestamp);
+            download_bbox(timestamp);
+        }): null
     );
 });
 
