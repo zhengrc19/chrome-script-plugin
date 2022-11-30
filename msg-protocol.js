@@ -53,6 +53,9 @@ const RecoderEventRule = {
     type: {
         type: Number,
         enum: RecoderEventType
+    },
+    bboxes: {
+        type: Array
     }
 }
 
@@ -331,6 +334,19 @@ class MsgRecoderEvent extends PluginMsgEvent {
             let task_list = new CapTaskList([TaskType.Img, TaskType.MHTML], sender.tab.id, timestamp,  
                         msg_handler.record_id_date, sendResponse, "st");
             task_controller.push(task_list);
+
+            // console.log("All bboxes:")
+            // console.log(this.data.bboxes);
+            let bboxes = JSON.stringify(this.data.bboxes, null, 4);
+            let date_str = msg_handler.record_id_date.toISOString().replaceAll("-", "_").replaceAll(":", ".");
+            let bbox_url = "data:application/x-mimearchive;base64," + btoa(unescape(encodeURIComponent(bboxes)));
+            let bbox_fname = `record_${date_str}/bbox/${timestamp}.json`;
+            chrome.downloads.download({
+                filename: bbox_fname,
+                url: bbox_url
+            }).then((downloadId) => {
+                console.log("Downloaded bbox!", downloadId, bbox_fname);
+            });
         }
         else if(type === RecoderEventType.END) {
             if(!msg_handler.is_recording) {
@@ -343,7 +359,7 @@ class MsgRecoderEvent extends PluginMsgEvent {
     }
 
     toJson() {
-        return this.legal? this.data : null;
+        return this.legal? { type: this.data.type } : null;
     }
 }
 
@@ -440,14 +456,6 @@ class MsgContentInitEvent extends PluginMsgEvent {
                         msg_handler.record_id_date, sendResponse, "new_page");
                     task_list.set_boot_info(msg);
                     task_controller.push(task_list);
-                    // chrome.tabs.captureVisibleTab().then((data_url) => {
-                    //     download_img(data_url, timestamp, msg_handler.record_id_date, "new_page");
-                    // });
-                    // chrome.pageCapture.saveAsMHTML({ tabId: tab_id}, async (blob) => {
-                    //     const content = await blob.text();
-                    //     const url = "data:application/x-mimearchive;base64," + btoa(content);
-                    //     download_mhtml(url, timestamp, msg_handler.record_id_date, "");
-                    // });
                 } else {
                     send();
                 }
