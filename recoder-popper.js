@@ -26,7 +26,8 @@ const MessageEventType = {
     ScrollEvent: 4,
     AbstractEvent: 5,
     PasteEvent: 6,
-    MaskEvent: 7
+    MaskEvent: 7,
+    BboxEvent: 8
 };
 
 const RecoderEventType = {
@@ -206,6 +207,18 @@ function build_paste_msg(
         "type": MaskMsgType.MaskReady
     }
     return build_msg(MessageEventType.MaskEvent, timestamp, data);
+}
+
+/**
+ * @param {str} bbox_str 
+ * @param {number} timestamp 
+ * @returns {Object}
+ */
+function build_bbox_msg(bbox_str, timestamp) {
+    let data = {
+        "bbox": bbox_str
+    };
+    return build_msg(MessageEventType.BboxEvent, timestamp, data);
 }
 
 /* Pop floating window */
@@ -559,16 +572,11 @@ async function download_bbox(timestamp) {
     for (var i = 0; i < document.body.children.length; i++) {
         bboxes.push(iterate_children(document.body.children[i], '', i));
     }
-
+    
     let bboxes_str = JSON.stringify(bboxes, null, 4);
-    let date_str = record_id_date.toISOString().replaceAll("-", "_").replaceAll(":", ".");
-    let bbox_url = "data:application/json;base64," + btoa(unescape(encodeURIComponent(bboxes_str)));
-    let bbox_fname = `record_${date_str}/bbox/${timestamp}.json`;
-
-    let a = document.createElement("a"); //Create <a>
-    a.href = bbox_url
-    a.download = bbox_fname; //File name Here
-    a.click();
+    chrome.runtime.sendMessage(
+        build_bbox_msg(bboxes_str, timestamp)
+    )
 }
 
 chrome.runtime.sendMessage(

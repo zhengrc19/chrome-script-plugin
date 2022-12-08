@@ -187,7 +187,6 @@ export class CapTaskList extends CaptureTask {
             this.task_list.push(val == TaskType.Img? new ImgCapTask(tab_id, timestamp, recorder_id_date, null, suffix)
                                 : new MHTMLCapTask(tab_id, timestamp, recorder_id_date, null));
         });
-        console.log(this.task_list);
     }
 
     async run() {

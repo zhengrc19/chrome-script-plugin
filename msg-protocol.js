@@ -9,7 +9,8 @@ export const MessageEventType = {
     ScrollEvent: 4,
     AbstractEvent: 5,
     PasteEvent: 6,
-    MaskEvent: 7
+    MaskEvent: 7,
+    BboxEvent: 8
 };
 
 const RecoderEventType = {
@@ -171,6 +172,12 @@ const MaskEventRule = {
     }
 }
 
+const BboxEventRule = {
+    bbox: {
+        type: String
+    }
+}
+
 /**
  * @param {*} type 
  * @returns {string}
@@ -227,52 +234,6 @@ function check_msg_legality(rule, msg, comp_msg) {
                 check_msg_legality(frule.child, fval, comp_msg);
             }
         }
-    });
-}
-
-/**
- * 
- * @param {string} url 
- * @param {number} timestamp
- * @param {Date} id_date date of recode starting time, use as unique record id
- * @param {string} suffix 
- */
-function download_img(url, timestamp, id_date, suffix) {
-    if (id_date == null) {
-        throw "null id_date!";
-    }
-    
-    let date_str = id_date.toISOString().replaceAll("-","_").replaceAll(":", ".");
-    let img_filename = `record_${date_str}/img/${timestamp}_${suffix}.jpeg`;
-
-    chrome.downloads.download({
-        filename: img_filename,
-        url: url
-    }).then((downloadId) => {
-        console.log("downloaded!", downloadId, img_filename);
-    });
-}
-
-/**
- * 
- * @param {string} url 
- * @param {number} timestamp
- * @param {Date} id_date date of recode starting time, use as unique record id
- * @param {string} suffix 
- */
-function download_mhtml(url, timestamp, id_date, suffix) {
-    if (id_date == null) {
-        throw "null id_date!";
-    }
-    
-    let date_str = id_date.toISOString().replaceAll("-","_").replaceAll(":", ".");
-    let mhtml_filename = `record_${date_str}/mhtml/${timestamp}_${suffix}.mhtml`;
-
-    chrome.downloads.download({
-        filename: mhtml_filename,
-        url: url
-    }).then((downloadId) => {
-        console.log("downloaded!", downloadId, mhtml_filename);
     });
 }
 
@@ -520,6 +481,33 @@ class MsgMaskEvent extends PluginMsgEvent {
     }
 }
 
+class MsgBboxEvent extends PluginMsgEvent {
+    /**
+     * @param {Object} msg 
+     */
+    constructor(msg) {
+        super(msg);
+        check_msg_legality(BboxEventRule, this.data, msg);
+        this.str = this.data.bbox;
+    }
+
+    handle(msg_handler, sender, sendResponse) {
+        let date_str = msg_handler.record_id_date.toISOString().replaceAll("-", "_").replaceAll(":", ".");
+        let bbox_fname = `record_${date_str}/bbox/${this.msg.timestamp}.json`;
+        let bbox_url = "data:application/json;base64," + btoa(unescape(encodeURIComponent(this.str)));
+        chrome.downloads.download({
+            filename: bbox_fname,
+            url: bbox_url
+        }).then((downloadId) => {
+            console.log("downloaded!", downloadId, bbox_fname);
+        });
+    }
+
+    toJson() {
+        return null;
+    }
+}
+
 export class Message {
     /**
      * @param {Object} msg 
@@ -549,6 +537,8 @@ export class Message {
             this.event = new MsgPasteEvent(msg);
         } else if(this.event_type == MessageEventType.MaskEvent) {
             this.event = new MsgMaskEvent(msg);
+        } else if(this.event_type == MessageEventType.BboxEvent) {
+            this.event = new MsgBboxEvent(msg);
         }
     }
 
