@@ -50,6 +50,17 @@ const MsgHeaderRule = {
     }
 };
 
+const BboxFieldRule = {
+    height: { type: Number },
+    width: { type: Number },
+    x: { type: Number },
+    y: { type: Number },
+    top: { type: Number },
+    right: { type: Number },
+    bottom: { type: Number },
+    left: { type: Number }
+}
+
 const RecoderEventRule = {
     type: {
         type: Number,
@@ -93,6 +104,11 @@ const ClickEventRule = {
         child: {
             type: Number
         }
+    },
+
+    bbox: {
+        type: Object,
+        child: BboxFieldRule
     }
 };
 
@@ -102,6 +118,10 @@ const InputEventRule = {
     },
     selector: {
         type: String
+    },
+    bbox: {
+        type: Object,
+        child: BboxFieldRule
     }
 }
 

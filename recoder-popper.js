@@ -78,12 +78,13 @@ function get_record_id() {
  */
 function build_click_msg(
     timestamp, 
-    type, selector, 
+    type, selector, bbox,
     offsetX, offsetY,
     pageX, pageY
 ) {
     let data = {
         "type": type,
+        "bbox": bbox,
         "selector": selector,
         "offsetXY": [offsetX, offsetY],
         "pageXY": [pageX, pageY]
@@ -124,17 +125,19 @@ function build_record_msg(
 
 /**
  * @param {number} timestamp 
+ * @param {Object} bbox
  * @param {string} selector 
  * @param {string} text 
  * @returns 
  */
 function build_input_msg(
     timestamp, 
-    selector, text
+    bbox, selector, text
 ) {
     let data = {
         "text": text,
-        "selector": selector
+        "selector": selector,
+        "bbox": bbox
     };
     return build_msg(MessageEventType.InputEvent, timestamp, data);
 }
@@ -697,9 +700,10 @@ document.body.addEventListener("click", function(event) {
     let selector = get_selector(event.target);
     console.log(selector);
     console.assert(document.querySelector(selector) == event.target); // assert selector is right
+    let bbox = event.target.getBoundingClientRect();
 
     chrome.runtime.sendMessage(
-        build_click_msg(timestamp, event.type, selector, event.offsetX, event.offsetY, event.pageX, event.pageY),
+        build_click_msg(timestamp, event.type, selector, bbox, event.offsetX, event.offsetY, event.pageX, event.pageY),
         callback=get_mask_callback(timestamp)
     );
 });
@@ -722,13 +726,14 @@ for (let i = 0; i < input_list.length; i++) {
         let timestamp = get_timestamp();
         let current_text = input_item.value;
         let selector = get_selector(input_item);
+        let bbox = ev.target.getBoundingClientRect();
         console.log("onchange!");
         console.log(current_text, timestamp);
         console.log(selector);
         console.assert(document.querySelector(selector) == ev.target);
 
         chrome.runtime.sendMessage(
-            build_input_msg(timestamp, selector, current_text),
+            build_input_msg(timestamp, bbox, selector, current_text),
             callback=get_mask_callback(timestamp)
         );
     });
