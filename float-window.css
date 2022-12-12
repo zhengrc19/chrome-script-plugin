@@ -2,7 +2,7 @@
     position: fixed;	        /* 设置fixed固定定位 */
     bottom: 20px;		/* 距离浏览器窗口下边框20px */
     left: 20px;		/* 距离浏览器窗口左边框20px */
-    z-index:999;        /* z-index设置到最大以置于顶层 */
+    z-index: 2147483646;        /* z-index设置到最大以置于顶层 */
 }
 .go-top #ext-recoder-href {
     display: block;			/* 将<a>标签设为块元素，用于美化样式 */

@@ -25,6 +25,13 @@
         {
             "matches": ["<all_urls>"],
             "all_frames": false,
+            "run_at": "document_idle",
+            "css": ["float-loading.css"],
+            "js": ["loading.js"]
+        },
+        {
+            "matches": ["<all_urls>"],
+            "all_frames": false,
             "run_at" : "document_end",
             "css": ["float-window.css", "third-party/bootstrap-3.4.1.min.css"],
             "js": [

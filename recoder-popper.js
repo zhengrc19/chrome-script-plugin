@@ -582,46 +582,6 @@ async function download_bbox(timestamp) {
     )
 }
 
-chrome.runtime.sendMessage(
-    build_init_msg(init_timestamp),
-    callback = (response) => {
-        init_is_recording = response["is_recording"];
-        let id = response["record_id"];
-        let trans_type = response["transition"];
-        let _date = response["record_timestamp"];  // may be null
-
-        myAssert(id != null);
-        myAssert(init_is_recording != null);
-        myAssert(trans_type != null);
-        console.log(init_is_recording, id, trans_type);
-        console.log(response);
-        
-        record_id = id;
-
-        if(init_is_recording ) {
-            if(trans_type == "forbidden") {
-                window.alert("禁止通过网址输入进行跳转，请关闭此页面以继续录制！");
-                return;
-            } else if(trans_type == "ignore") {
-                return;
-            }
-
-            record_id_date = new Date(_date);
-
-            get_mask_callback(init_timestamp, 
-                () => { 
-                    recoder_change(init_is_recording); 
-                    download_bbox(init_timestamp);
-                }
-            )(response);
-        } else {
-            if(trans_type != "ignore") {
-                unhide_element(float_recoder);
-            }
-        }
-    }
-);
-
 
 let moved = false;
 let clicked = false;
@@ -906,3 +866,57 @@ dragElement(document.getElementById("panel"));
 dragElement(document.getElementById("scroll-window"));
 dragElement(document.getElementById("text-window"));
 dragElement(document.getElementById("paste-window"));
+
+
+// sending init here 
+chrome.runtime.sendMessage(
+    build_init_msg(init_timestamp),
+    callback = (response) => {
+        init_is_recording = response["is_recording"];
+        let id = response["record_id"];
+        let trans_type = response["transition"];
+        let _date = response["record_timestamp"];  // may be null
+
+        myAssert(id != null);
+        myAssert(init_is_recording != null);
+        myAssert(trans_type != null);
+        console.log(init_is_recording, id, trans_type);
+        console.log(response);
+        
+        record_id = id;
+
+        if(init_is_recording ) {
+            if(trans_type == "forbidden") {
+                window.alert("禁止通过网址输入进行跳转，请关闭此页面以继续录制！");
+                return;
+            } else if(trans_type == "ignore") {
+                return;
+            }
+
+            record_id_date = new Date(_date);
+
+            get_mask_callback(init_timestamp, 
+                () => { 
+                    // mask loading 
+                    let load = document.getElementById("ext-plugin-loading");
+                    if (load != null) {
+                        hide_element(load);
+                    }
+
+                    recoder_change(init_is_recording); 
+                    download_bbox(init_timestamp);
+                }
+            )(response);
+        } else {
+            if(trans_type != "ignore") {
+                // mask loading 
+                let load = document.getElementById("ext-plugin-loading");
+                if (load != null) {
+                    hide_element(load);
+                }
+
+                unhide_element(float_recoder);
+            }
+        }
+    }
+);

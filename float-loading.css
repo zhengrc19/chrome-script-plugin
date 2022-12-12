@@ -1,0 +1,39 @@
+.glyphicon.spinning {
+    animation: spin 1s infinite linear;
+    -webkit-animation: spin2 1s infinite linear;
+}
+
+@keyframes spin {
+    from { transform: scale(1) rotate(0deg); }
+    to { transform: scale(1) rotate(360deg); }
+}
+
+@-webkit-keyframes spin2 {
+    from { -webkit-transform: rotate(0deg); }
+    to { -webkit-transform: rotate(360deg); }
+}
+
+#ext-plugin-loading {
+    width: -webkit-fill-available;
+    height: -webkit-fill-available;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    z-index: 2147483647;
+    background-color: rgba(100, 100, 100, 0.5);
+    text-align: center;
+}
+
+#ext-plugin-loading span {
+    border: 6px solid #f3f3f3; /* Light grey */
+    border-top: 6px solid #2b95db; /* Blue */
+    border-radius: 50%;
+    margin-top: 20px;
+    width: 40px;
+    height: 40px;
+}
+
+.hidden {
+    display: none;
+    visibility: collapse;
+}
