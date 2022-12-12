@@ -714,9 +714,13 @@ recoder_button.addEventListener("mousemove", () => {
     }
 });
 
-/* Listen all click event */
-document.body.addEventListener("click", function(event) {
+let last_event_timestep = 0;
+function process_click(event) {
     let timestamp = get_timestamp();
+    if (timestamp - last_event_timestep <= 100) {
+        return;
+    }
+    last_event_timestep = timestamp;
     if (!is_recording()) {  // ignoring if not recording
         return;
     }
@@ -745,7 +749,23 @@ document.body.addEventListener("click", function(event) {
         build_click_msg(timestamp, event.type, selector, bbox, event.offsetX, event.offsetY, event.pageX, event.pageY),
         callback=get_mask_callback(timestamp)
     );
-});
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/* Listen all click event */
+document.body.addEventListener("click", process_click);
+let input_items = document.getElementsByTagName("input");
+for (let item of input_items) {
+    item.addEventListener("click", async event => {
+        await sleep(50);
+        process_click(event);
+    });
+}
+
+
 
 
 /* Listen all input change event */

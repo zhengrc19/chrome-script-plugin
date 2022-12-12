@@ -17,7 +17,7 @@ export default class RecorderHandler {
     msg_callback(msg_obj, sender, sendResponse) {
         // console.log("received! ", msg_obj);
         let msg = new Message(msg_obj);
-        console.log(msg);
+        // console.log(msg);
         // console.log(msg.get_event());
         msg.handle(this, sender, sendResponse);
     }
@@ -43,7 +43,7 @@ export default class RecorderHandler {
         console.log("record id date", this.record_id_date);
 
         let str_msgs = JSON.stringify(simple_objects, null, 4); //indentation in json format, human readable
-        console.log(str_msgs);
+        // console.log(str_msgs);
         let json_url = "data:application/x-mimearchive;base64," + btoa(unescape(encodeURIComponent(str_msgs)));
         let json_filename = `record_${date_str}/log/actions.json`;
         chrome.downloads.download({
@@ -64,10 +64,10 @@ export default class RecorderHandler {
         });
 
         
-        console.log("clearing msgs");
+        // console.log("clearing msgs");
         this.received_msgs = [];
         this.sended_msgs = [];
-        console.log(this.received_msgs, this.sended_msgs);
+        // console.log(this.received_msgs, this.sended_msgs);
 
         this.record_id_date = null;
     }
