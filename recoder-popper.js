@@ -455,6 +455,19 @@ function get_timestamp() {
 }
 
 /**
+ * get fall back selector
+ * @param {HTMLElement} el
+ * @returns {string}
+ */
+function get_fall_back_selector(el){
+    if(el.id) {
+        return "#" + el.id;
+    } else {
+        return el.outerHTML;
+    }
+}
+
+/**
  * get selector
  * TODO: simplify selector, using id or name
  * @function
@@ -463,7 +476,7 @@ function get_timestamp() {
  */
 function get_selector(el) {
     if (el.tagName == null) {
-        return get_selector(el.parentElement);
+        return el.parentElement? get_selector(el.parentElement): get_fall_back_selector(el);
     }
     if (el.tagName.toLowerCase() === "body") {
         return "BODY";
@@ -472,37 +485,23 @@ function get_selector(el) {
         return "#" + el.id;
     }
 
+    if(!el.parentElement) {
+        return get_fall_back_selector(el);
+    }
+
     let child_idx = 1;
     for (let e = el; e.previousElementSibling; e = e.previousElementSibling, child_idx++) ;
     return get_selector(el.parentElement) + " > " + el.tagName + ":nth-child(" + child_idx.toString() + ")";
 }
 
 /**
- * @function
- * @param {HTMLElement} el
- */
-function ignore_click(el) {
-    let tag = el.tagName.toLowerCase();
-    if (tag == "body") {
-        return true;
-    }
-
-    if (tag == "a" || tag == "input" || tag == "button") {
-        return false;
-    }
-
-    if(el.getAttribute("onclick") != null || el.getAttribute("href") != null) {
-        return false;
-    }
-
-    return ignore_click(el.parentElement);
-}
-
-/**
  * @param {HTMLElement} el 
  * @returns {boolean}
  */
-function is_inject_el(el) {
+ function is_inject_el(el) {
+    if (el == null) {
+        return false;
+    }
     if(el.tagName.toLowerCase() == "body") {
         return false;
     }
@@ -526,7 +525,7 @@ function is_inject_el(el) {
  * @param {() => void} finish_hook
  * @returns {(Object) => void}
  */
-function get_mask_callback(timestamp, finish_hook=null) {
+ function get_mask_callback(timestamp, finish_hook=null) {
     return async (response) => {
         /**
          * response ={
@@ -559,6 +558,87 @@ function get_mask_callback(timestamp, finish_hook=null) {
             }
         )
     };
+}
+
+/**
+* @param {HTMLElement} el 
+ */
+function add_input_handler(el) {
+    let input_list = el.getElementsByTagName("input");
+    console.log(input_list.length);
+    for (let i = 0; i < input_list.length; i++) {
+        let input_item = input_list[i];
+        if(is_inject_el(input_item)) {
+            continue;
+        }
+        input_item.addEventListener("change", (ev) => {
+            if (!is_recording()) {  // ignoring if not recording
+                return;
+            }
+    
+            let timestamp = get_timestamp();
+            let current_text = input_item.value;
+            let selector = get_selector(input_item);
+            let bbox = ev.target.getBoundingClientRect();
+            console.log("onchange!");
+            console.log(current_text, timestamp);
+            console.log(selector);
+            // console.assert(document.querySelector(selector) == ev.target);
+    
+            chrome.runtime.sendMessage(
+                build_input_msg(timestamp, bbox, selector, current_text),
+                callback=get_mask_callback(timestamp)
+            );
+        });
+    }
+}
+
+/** listen document change */
+let pre_change_timestamp = -1;
+function observer_handler(mutationsList, observer) {
+    let timestamp = get_timestamp()
+    pre_change_timestamp = pre_change_timestamp < timestamp? timestamp: pre_change_timestamp;
+    if(is_recording()) {
+        for(let mutation of mutationsList) {
+            if (mutation.type == 'childList') {
+                mutation.addedNodes.forEach((val, index, arr) => {
+                    if (val instanceof HTMLElement) {
+                        add_input_handler(val);
+                    }
+                });
+            }
+        }
+    }
+}
+const observer_config = { attributes: true, childList: true, subtree: true };
+const observer = new MutationObserver(observer_handler);
+observer.observe(document.body, observer_config);
+
+/**
+ * @function
+ * @param {HTMLElement} el
+ * @param {number} timestamp
+ * @returns {boolean}
+ */
+function ignore_click(el, timestamp) {
+    if(Math.abs(timestamp - pre_change_timestamp) < 10) {
+        return false;
+    }
+
+    let tag = el.tagName.toLowerCase();
+    if (tag == "body") {
+        return true;
+    }
+
+    if (tag == "a" || tag == "input" || tag == "button") {
+        return false;
+    }
+
+    if(el.getAttribute("onclick") != null || el.getAttribute("href") != null) {
+        return false;
+    }
+
+    return ignore_click(el.parentElement, timestamp);
 }
 
 /* send content start msg */
@@ -636,6 +716,7 @@ recoder_button.addEventListener("mousemove", () => {
 
 /* Listen all click event */
 document.body.addEventListener("click", function(event) {
+    let timestamp = get_timestamp();
     if (!is_recording()) {  // ignoring if not recording
         return;
     }
@@ -645,11 +726,9 @@ document.body.addEventListener("click", function(event) {
 
     console.log("onclick!");
     console.log(event.target);
-    if (ignore_click(event.target)){  // TODO: more accurate filter
+    if (ignore_click(event.target, timestamp)){  // TODO: more accurate filter
         return;
     }
-    
-    let timestamp = get_timestamp();
     
     console.log(timestamp);
     console.log(event.offsetX, event.offsetY);  // cursor pos relative to targeted object
@@ -659,7 +738,7 @@ document.body.addEventListener("click", function(event) {
     // get selector
     let selector = get_selector(event.target);
     console.log(selector);
-    console.assert(document.querySelector(selector) == event.target); // assert selector is right
+    // console.assert(document.querySelector(selector) == event.target); // assert selector is right
     let bbox = event.target.getBoundingClientRect();
 
     chrome.runtime.sendMessage(
@@ -670,34 +749,7 @@ document.body.addEventListener("click", function(event) {
 
 
 /* Listen all input change event */
-var input_list = document.getElementsByTagName("input");
-console.log(input_list.length);
-
-for (let i = 0; i < input_list.length; i++) {
-    let input_item = input_list[i];
-    if(is_inject_el(input_item)) {
-        continue;
-    }
-    input_item.addEventListener("change", (ev) => {
-        if (!is_recording()) {  // ignoring if not recording
-            return;
-        }
-
-        let timestamp = get_timestamp();
-        let current_text = input_item.value;
-        let selector = get_selector(input_item);
-        let bbox = ev.target.getBoundingClientRect();
-        console.log("onchange!");
-        console.log(current_text, timestamp);
-        console.log(selector);
-        console.assert(document.querySelector(selector) == ev.target);
-
-        chrome.runtime.sendMessage(
-            build_input_msg(timestamp, bbox, selector, current_text),
-            callback=get_mask_callback(timestamp)
-        );
-    });
-}
+add_input_handler(document)
 
 /* Listen scroll event */ 
 window.addEventListener("scroll", (ev) => {
@@ -745,6 +797,7 @@ scroll_form.addEventListener("submit", async (event) => {
     let y = Math.round(max_scrollY * (sy / 100));
     userset_scrollX = x;
     userset_scrollY = y;
+    await new Promise(r => setTimeout(r, 10)); // wait a little while to make sure set is done
     window.scrollTo(x,y);
 
     let timestamp = get_timestamp();
