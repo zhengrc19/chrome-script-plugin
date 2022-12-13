@@ -435,6 +435,7 @@ function is_recording() {
 
 var userset_scrollX = 0;
 var userset_scrollY = 0;
+var plugin_scroll = false;
 /**
  * @function
  * @returns {array}
@@ -763,6 +764,8 @@ window.addEventListener("scroll", (ev) => {
     
     if (window.scrollX == setXY[0] && window.scrollY == setXY[1]) {
         return;
+    } else if(plugin_scroll) {
+        return;
     }
     console.log("scroll warning!");
     console.log(timestamp, window.scrollX, window.scrollY);
@@ -797,7 +800,9 @@ scroll_form.addEventListener("submit", async (event) => {
     let y = Math.round(max_scrollY * (sy / 100));
     userset_scrollX = x;
     userset_scrollY = y;
+    plugin_scroll = true;
     window.scrollTo(x,y);
+    plugin_scroll = false;
 
     let timestamp = get_timestamp();
     await new Promise(r => setTimeout(r, 100)); // wait a little while to make sure scroll is done
