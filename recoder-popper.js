@@ -797,7 +797,6 @@ scroll_form.addEventListener("submit", async (event) => {
     let y = Math.round(max_scrollY * (sy / 100));
     userset_scrollX = x;
     userset_scrollY = y;
-    await new Promise(r => setTimeout(r, 10)); // wait a little while to make sure set is done
     window.scrollTo(x,y);
 
     let timestamp = get_timestamp();
