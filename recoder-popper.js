@@ -745,7 +745,7 @@ document.body.addEventListener("click", function(event) {
         build_click_msg(timestamp, event.type, selector, bbox, event.offsetX, event.offsetY, event.pageX, event.pageY),
         callback=get_mask_callback(timestamp)
     );
-});
+}, true);
 
 
 /* Listen all input change event */
@@ -938,7 +938,13 @@ chrome.runtime.sendMessage(
         
         record_id = id;
 
-        if(init_is_recording ) {
+        // mask loading 
+        let load = document.getElementById("ext-plugin-loading");
+        if (load != null) {
+            hide_element(load);
+        }
+
+        if(init_is_recording) {
             if(trans_type == "forbidden") {
                 window.alert("禁止通过网址输入进行跳转，请关闭此页面以继续录制！");
                 return;
@@ -950,24 +956,12 @@ chrome.runtime.sendMessage(
 
             get_mask_callback(init_timestamp, 
                 () => { 
-                    // mask loading 
-                    let load = document.getElementById("ext-plugin-loading");
-                    if (load != null) {
-                        hide_element(load);
-                    }
-
                     recoder_change(init_is_recording); 
                     download_bbox(init_timestamp);
                 }
             )(response);
         } else {
             if(trans_type != "ignore") {
-                // mask loading 
-                let load = document.getElementById("ext-plugin-loading");
-                if (load != null) {
-                    hide_element(load);
-                }
-
                 unhide_element(float_recoder);
             }
         }
