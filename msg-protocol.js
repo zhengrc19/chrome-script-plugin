@@ -265,6 +265,7 @@ class PluginMsgEvent {
     constructor(msg) {
         this.data = msg["data"];
         this.msg = msg;
+        this.name = msg.name;
     }
 
     /**
@@ -306,11 +307,12 @@ class MsgRecoderEvent extends PluginMsgEvent {
 
             msg_handler.is_recording = true;
             msg_handler.record_id_date = new Date(timestamp);
+            msg_handler.event_name = this.msg.name;
             
             task_controller.start();
 
             let task_list = new CapTaskList([TaskType.Img, TaskType.MHTML], sender.tab.id, timestamp,  
-                        msg_handler.record_id_date, sendResponse, "st");
+                        msg_handler.record_id_date, msg_handler.event_name, sendResponse, "st");
             task_controller.push(task_list);
         }
         else if(type === RecoderEventType.END) {
@@ -339,7 +341,7 @@ class MsgClickEvent extends PluginMsgEvent{
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, sendResponse, "click");
+        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, msg_handler.event_name, sendResponse, "click");
         task_controller.push(img_task);
     }
 }
@@ -355,7 +357,7 @@ class MsgInputEvent extends PluginMsgEvent {
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, sendResponse, "input");
+        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, msg_handler.event_name, sendResponse, "input");
         task_controller.push(img_task);
     }
 }
@@ -423,7 +425,7 @@ class MsgContentInitEvent extends PluginMsgEvent {
 
                     msg["transition"] = this.trans_type;
                     let task_list = new CapTaskList([TaskType.Img, TaskType.MHTML], tab_id, timestamp,  
-                        msg_handler.record_id_date, sendResponse, "new_page");
+                        msg_handler.record_id_date, msg_handler.event_name, sendResponse, "new_page");
                     task_list.set_boot_info(msg);
                     task_controller.push(task_list);
                 } else {
@@ -454,7 +456,7 @@ class MsgScrollEvent extends PluginMsgEvent {
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, sendResponse, "scroll");
+        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, msg_handler.event_name, sendResponse, "scroll");
         task_controller.push(img_task);
     }
 }
@@ -480,7 +482,7 @@ class MsgPasteEvent extends PluginMsgEvent {
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, sendResponse, "paste");
+        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, msg_handler.event_name, sendResponse, "paste");
         task_controller.push(img_task);
     }
 }
@@ -513,7 +515,8 @@ class MsgBboxEvent extends PluginMsgEvent {
 
     handle(msg_handler, sender, sendResponse) {
         let date_str = msg_handler.record_id_date.toISOString().replaceAll("-", "_").replaceAll(":", ".");
-        let bbox_fname = `record_${date_str}/bbox/${this.msg.timestamp}.json`;
+        let event_name = msg_handler.event_name;
+        let bbox_fname = `record_${event_name}_${date_str}/bbox/${this.msg.timestamp}.json`;
         let bbox_url = "data:application/json;base64," + btoa(unescape(encodeURIComponent(this.str)));
         chrome.downloads.download({
             filename: bbox_fname,
@@ -535,6 +538,7 @@ export class Message {
     constructor(msg) {
         check_msg_legality(MsgHeaderRule, msg, msg);
         this.msg = msg;
+        this.event_name = msg.name;
         this.event_type = msg.type;
         this.timestamp = msg.timestamp;
         this.url = msg.url;
@@ -582,6 +586,7 @@ export class Message {
             let ret = {
                 "event_type": this.event_type,
                 "timestamp": this.timestamp,
+                "event_name": this.event_name,
                 "tabId": this.tab_id,
                 "url": this.url,
                 "data": ev_data

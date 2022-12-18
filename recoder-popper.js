@@ -60,6 +60,7 @@ function get_record_id() {
         "url": get_url(),
         "id": get_record_id(),
         "type": event_type,
+        "name": user_defined_name,
         "timestamp": timestamp,
         "data": data
     };
@@ -666,6 +667,7 @@ async function download_bbox(timestamp) {
 
 let moved = false;
 let clicked = false;
+let user_defined_name;
 /** Send recoder msg */
 recoder_button.addEventListener("mouseup", function(event) {
 
@@ -679,17 +681,22 @@ recoder_button.addEventListener("mouseup", function(event) {
 
     event.preventDefault();
 
-    let timestamp = get_timestamp();
     let is_start;
     if(this.classList.contains("recording")) {
         console.log("end recoding");
         is_start = false;
         recoder_change(false);
     } else {
-        console.log("start recoding");
+        user_defined_name = window.prompt("请输入本次录制名称：");
+        if (!user_defined_name) {
+            user_defined_name = '';
+        }
+        console.log("start recoding", user_defined_name);
         is_start = true;
         recoder_change(true);
     }
+
+    let timestamp = get_timestamp();
 
     console.log("recording action: ", timestamp, is_start);
 

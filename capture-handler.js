@@ -36,12 +36,14 @@ class CaptureTask {
      * @param {number} tab_id 
      * @param {number} timestamp
      * @param {Date} recorder_id_date
+     * @param {string} event_name user given name of record event
      * @param {(Object) => void} sendResponse parameter in msg listener
      */
-    constructor(tab_id, timestamp, recorder_id_date, sendResponse) {
+    constructor(tab_id, timestamp, recorder_id_date, event_name, sendResponse) {
         this.task_id = -1;
         this.tab_id = tab_id;
         this.timestamp = timestamp;
+        this.event_name = event_name;
         this.id_date = recorder_id_date;
         this.sendResponse = sendResponse;
 
@@ -86,15 +88,16 @@ class CaptureTask {
  * @param {string} url 
  * @param {number} timestamp
  * @param {Date} id_date date of recode starting time, use as unique record id
+ * @param {string} event_name user given name of record event
  * @param {string} suffix 
  */
- function download_img(url, timestamp, id_date, suffix) {
+ function download_img(url, timestamp, id_date, event_name, suffix) {
     if (id_date == null) {
         throw "null id_date!";
     }
     
     let date_str = id_date.toISOString().replaceAll("-","_").replaceAll(":", ".");
-    let img_filename = `record_${date_str}/img/${timestamp}_${suffix}.jpeg`;
+    let img_filename = `record_${event_name}_${date_str}/img/${timestamp}_${suffix}.jpeg`;
 
     chrome.downloads.download({
         filename: img_filename,
@@ -110,17 +113,18 @@ export class ImgCapTask extends CaptureTask {
      * @param {number} tab_id 
      * @param {number} timestamp
      * @param {Date} recorder_id_date
+     * @param {string} event_name
      * @param {(Object) => void} sendResponse parameter in msg listener
      * @param {string} suffix
      */
-     constructor(tab_id, timestamp, recorder_id_date, sendResponse, suffix) {
-        super(tab_id, timestamp, recorder_id_date, sendResponse);
+     constructor(tab_id, timestamp, recorder_id_date, event_name, sendResponse, suffix) {
+        super(tab_id, timestamp, recorder_id_date, event_name, sendResponse);
         this.suffix = suffix;
      }
 
     async run() {
         await chrome.tabs.captureVisibleTab().then((data_url) => {
-            download_img(data_url, this.timestamp, this.id_date, this.suffix); // DO NOT wait for download
+            download_img(data_url, this.timestamp, this.id_date, this.event_name, this.suffix); // DO NOT wait for download
         });
         this.status = TaskStatus.Finish;
     }
@@ -131,15 +135,15 @@ export class ImgCapTask extends CaptureTask {
  * @param {string} url 
  * @param {number} timestamp
  * @param {Date} id_date date of recode starting time, use as unique record id
- * @param {string} suffix 
+ * @param {string} event_name user given name of record event
  */
- function download_mhtml(url, timestamp, id_date) {
+ function download_mhtml(url, timestamp, id_date, event_name) {
     if (id_date == null) {
         throw "null id_date!";
     }
     
     let date_str = id_date.toISOString().replaceAll("-","_").replaceAll(":", ".");
-    let mhtml_filename = `record_${date_str}/mhtml/${timestamp}.mhtml`;
+    let mhtml_filename = `record_${event_name}_${date_str}/mhtml/${timestamp}.mhtml`;
 
     chrome.downloads.download({
         filename: mhtml_filename,
@@ -155,17 +159,18 @@ export class MHTMLCapTask extends CaptureTask {
      * @param {number} tab_id 
      * @param {number} timestamp
      * @param {Date} recorder_id_date
+     * @param {string} event_name user given name of record event
      * @param {(Object) => void} sendResponse parameter in msg listener
      */
-    constructor(tab_id, timestamp, recorder_id_date, sendResponse) {
-        super(tab_id, timestamp, recorder_id_date, sendResponse);
+    constructor(tab_id, timestamp, recorder_id_date, event_name, sendResponse) {
+        super(tab_id, timestamp, recorder_id_date, event_name, sendResponse);
     }
 
     async run() {
         await chrome.pageCapture.saveAsMHTML({ tabId: this.tab_id}, async (blob) => {
             const content = await blob.text();
             const url = "data:application/x-mimearchive;base64," + btoa(content);
-            download_mhtml(url, this.timestamp, this.id_date, "");  // DO NOT wait for download
+            download_mhtml(url, this.timestamp, this.id_date, this.event_name);  // DO NOT wait for download
         });
         this.status = TaskStatus.Finish;
     }
@@ -177,15 +182,16 @@ export class CapTaskList extends CaptureTask {
      * @param {number} tab_id 
      * @param {number} timestamp
      * @param {Date} recorder_id_date
+     * @param {string} event_name user given name of record event
      * @param {function} sendResponse parameter in msg listener
      * @param {string} suffix
      */
-    constructor(task_types, tab_id, timestamp, recorder_id_date, sendResponse, suffix) {
-        super(tab_id, timestamp, recorder_id_date, sendResponse);
+    constructor(task_types, tab_id, timestamp, recorder_id_date, event_name, sendResponse, suffix) {
+        super(tab_id, timestamp, recorder_id_date, event_name, sendResponse);
         this.task_list = [];
         task_types.forEach((val, id, arr) => {
-            this.task_list.push(val == TaskType.Img? new ImgCapTask(tab_id, timestamp, recorder_id_date, null, suffix)
-                                : new MHTMLCapTask(tab_id, timestamp, recorder_id_date, null));
+            this.task_list.push(val == TaskType.Img? new ImgCapTask(tab_id, timestamp, recorder_id_date, event_name, null, suffix)
+                                : new MHTMLCapTask(tab_id, timestamp, recorder_id_date, event_name, null));
         });
     }
 
