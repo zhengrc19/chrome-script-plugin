@@ -842,6 +842,10 @@ text_form.addEventListener("submit", (event) => {
 
 var selection_data = null;
 document.addEventListener("copy", (event) => {
+    if(is_hidden(paste_window)) {
+        return;
+    }
+
     let selection = document.getSelection();
     let st_node = selection.anchorNode, ed_node = selection.focusNode;
     let st_offset = selection.anchorOffset, ed_offset = selection.focusOffset;
