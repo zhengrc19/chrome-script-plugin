@@ -6,5 +6,5 @@ loading_mask.innerHTML = ' \
 <p>正在加载中 ...</p>'
 
 if(document.getElementById("ext-recoder-window") == null){
-    document.body.appendChild(loading_mask);
+    document.documentElement.appendChild(loading_mask);
 }
