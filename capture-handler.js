@@ -223,6 +223,7 @@ class PluginLock {
      */
     lock(thread) {
         if(this.is_locked) { // already locked
+            console.log("is locked");
             this.wait_queue.push(thread);
         } else {
             this.is_locked = true;
@@ -322,13 +323,20 @@ class CapTaskController {
         let self = this;
 
         console.assert(tab_id == msg.tab_id);
-        task.run().then(() => {
-            task.status = TaskStatus.Finish;
-            task.send_release(sendResponse);
-            delete self.queues[task_id];
-            let lock = self.tab_locks[tab_id];
-            lock.unlock();
-        });
+        let lock = self.tab_locks[tab_id];
+
+        try {
+            task.run().then(() => {
+                task.status = TaskStatus.Finish;
+                task.send_release(sendResponse);
+                delete self.queues[task_id];
+                lock.unlock();
+            });
+        } catch(err) {
+            if (lock.is_locked) {
+                lock.unlock();
+            }
+        }
     }
 
     async clear() {

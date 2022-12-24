@@ -1,4 +1,5 @@
 import { Message } from "./msg-protocol.js";
+import { task_controller } from "./capture-handler.js"
 
 export default class RecorderHandler {
     constructor() {
@@ -69,6 +70,7 @@ export default class RecorderHandler {
         this.received_msgs = [];
         this.sended_msgs = [];
         console.log(this.received_msgs, this.sended_msgs);
+        task_controller.clear();
 
         this.record_id_date = null;
     }

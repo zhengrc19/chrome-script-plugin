@@ -329,6 +329,16 @@ var text_form = text_window.children[0];
 var paste_form = paste_window.children[1];
 var all_windows = [scroll_window, text_window, paste_window];
 
+/** global variables */
+/**
+ * return true if in recording process
+ * @function
+ * @param {}
+ * @returns {boolean}
+ */
+function is_recording() {
+    return recoder_button.classList.contains("recording");
+}
 
 /**
  * @param {HTMLElement} el 
@@ -422,17 +432,6 @@ pop_button.addEventListener("click", (event) => {
         hide_all_windows();
     }
 });
-
-/** global variables */
-/**
- * return true if in recording process
- * @function
- * @param {}
- * @returns {boolean}
- */
-function is_recording() {
-    return recoder_button.classList.contains("recording");
-}
 
 var userset_scrollX = 0;
 var userset_scrollY = 0;
@@ -753,6 +752,7 @@ document.body.addEventListener("click", function(event) {
         build_click_msg(timestamp, event.type, selector, bbox, event.offsetX, event.offsetY, event.pageX, event.pageY),
         callback=get_mask_callback(timestamp)
     );
+    return;
 }, true);
 
 
@@ -963,11 +963,11 @@ chrome.runtime.sendMessage(
                 return;
             }
 
+            recoder_change(init_is_recording); 
             record_id_date = new Date(_date);
 
             get_mask_callback(init_timestamp, 
                 () => { 
-                    recoder_change(init_is_recording); 
                     download_bbox(init_timestamp);
                 }
             )(response);
