@@ -13,10 +13,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log(err);
         chrome.scripting.executeScript({
             target: { tabId: sender.tab.id },
-            func: () => {
-                let alert = "出现错误：\n" + err.message + "\n建议结束此次录制并重新录制。";
+            func: (err) => {
+                let alert = "出现错误：\n" + err + "\n建议结束此次录制并重新录制。";
                 window.alert(alert);
-            }
+            },
+            args: [err.message]
         });
     }
     return true; // sendResponse open for async

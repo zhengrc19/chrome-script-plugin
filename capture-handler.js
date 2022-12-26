@@ -325,42 +325,34 @@ class CapTaskController {
         console.assert(tab_id == msg.tab_id);
         let lock = self.tab_locks[tab_id];
 
-        try {
-            task.run().then(() => {
-                task.status = TaskStatus.Finish;
-                task.send_release(sendResponse);
-                delete self.queues[task_id];
-                lock.unlock();
-            });
-        } catch(err) {
+        task.run().then(() => {
+            task.status = TaskStatus.Finish;
+            task.send_release(sendResponse);
+            delete self.queues[task_id];
+            lock.unlock();
+        }).catch((err) => {
             if (lock.is_locked) {
                 lock.unlock();
             }
-            throw err;
-        }
+            console.log("in promise: ", err);
+            let tab_id = task.tab_id;
+
+            chrome.scripting.executeScript({
+                target: { tabId: tab_id },
+                func: (err) => {
+                    console.log(err);
+                    let alert = "操作速度过快！\n" + err + "\n建议结束此次录制并重新录制。";
+                    window.alert(alert);
+                },
+                args: [err.message]
+            });
+        });
     }
 
     async clear() {
         this.accept = false;
-        let self = this;
-        function is_clear() {
-            let task_num = Object.keys(self.queues).length;
-            if(task_num == 0) {
-                let tab_ids = Object.keys(self.tab_locks);
-                for(let i=0;i<tab_ids.length;i++) {
-                    let id = tab_ids[i];
-                    if(!self.tab_locks[id].idle()) {
-                        console.warn("err?");
-                    }
-                    self.tab_locks = [];
-                }
-            } 
-            return task_num == 0;
-        }
-
-        while(!is_clear()) {
-            await new Promise((r) => setTimeout(100));
-        }
+        this.queues = {};
+        this.tab_locks = {};
     }
 }
 

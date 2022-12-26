@@ -15,7 +15,8 @@
         "pageCapture",
         "tabs",
         "downloads",
-        "history"
+        "history",
+        "scripting"
     ],
     "action": {
         "default_title": "Settings",
