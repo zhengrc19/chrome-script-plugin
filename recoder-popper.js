@@ -564,33 +564,37 @@ function get_selector(el) {
 /**
 * @param {HTMLElement} el 
  */
+var input_tag_names = ["input", "select"];
 function add_input_handler(el) {
-    let input_list = el.getElementsByTagName("input");
-    console.log(input_list.length);
-    for (let i = 0; i < input_list.length; i++) {
-        let input_item = input_list[i];
-        if(is_inject_el(input_item)) {
-            continue;
-        }
-        input_item.addEventListener("change", (ev) => {
-            if (!is_recording()) {  // ignoring if not recording
-                return;
+    for(let i=0;i<input_tag_names.length;i++){
+        let tagname = input_tag_names[i];
+        let input_list = el.getElementsByTagName(tagname);
+        console.log(tagname, input_list.length);
+        for (let i = 0; i < input_list.length; i++) {
+            let input_item = input_list[i];
+            if(is_inject_el(input_item)) {
+                continue;
             }
-    
-            let timestamp = get_timestamp();
-            let current_text = input_item.value;
-            let selector = get_selector(input_item);
-            let bbox = ev.target.getBoundingClientRect();
-            console.log("onchange!");
-            console.log(current_text, timestamp);
-            console.log(selector);
-            // console.assert(document.querySelector(selector) == ev.target);
-    
-            chrome.runtime.sendMessage(
-                build_input_msg(timestamp, bbox, selector, current_text),
-                callback=get_mask_callback(timestamp)
-            );
-        });
+            input_item.addEventListener("change", (ev) => {
+                if (!is_recording()) {  // ignoring if not recording
+                    return;
+                }
+        
+                let timestamp = get_timestamp();
+                let current_text = input_item.value;
+                let selector = get_selector(input_item);
+                let bbox = ev.target.getBoundingClientRect();
+                console.log("onchange!");
+                console.log(current_text, timestamp);
+                console.log(selector);
+                // console.assert(document.querySelector(selector) == ev.target);
+        
+                chrome.runtime.sendMessage(
+                    build_input_msg(timestamp, bbox, selector, current_text),
+                    callback=get_mask_callback(timestamp)
+                );
+            });
+        }
     }
 }
 
@@ -631,7 +635,7 @@ function ignore_click(el, timestamp) {
         return true;
     }
 
-    if (tag == "a" || tag == "input" || tag == "button") {
+    if (tag == "a" || tag == "input" || tag == "button" || tag == "select") {
         return false;
     }
 
