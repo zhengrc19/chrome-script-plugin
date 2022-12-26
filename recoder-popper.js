@@ -721,6 +721,51 @@ recoder_button.addEventListener("mousemove", () => {
     }
 });
 
+/** capture all user input and check if an action is triggered by user */
+var user_scroll = -1;
+var user_click = -1;
+document.addEventListener("keydown", (e) => {
+    if(e.key == "PageUp"        // page up 
+           || e.key == "PageDown"     // page dn 
+           || e.key == " "     // spacebar
+           || e.key == "ArrowUp"     // up 
+           || e.key == "ArrowDown"     // down 
+           || e.key == "ArrowLeft"
+           || e.key == "ArrowRight"
+           || (e.ctrlKey && e.key == "Home")     // ctrl + home 
+           || (e.ctrlKey && e.key == "End")     // ctrl + end 
+          ) { 
+            let timestamp = get_timestamp();
+            user_scroll = user_scroll < timestamp? timestamp: user_scroll;
+    } 
+}, true);
+
+document.addEventListener("wheel", (ev) => {
+    let timestamp = get_timestamp();
+    user_scroll = user_scroll < timestamp? timestamp: user_scroll;
+}, true);
+
+document.addEventListener("mousedown", (ev) => {
+    let timestamp = get_timestamp();
+    if (ev.clientX > document.documentElement.clientWidth || ev.clientY > document.documentElement.clientHeight) {
+        console.log("mouse scroll");
+        user_scroll = user_scroll < timestamp? timestamp: user_scroll;
+    } 
+}, true);
+
+document.addEventListener("mouseup", (ev) => {
+    let timestamp = get_timestamp();
+    user_click = user_click < timestamp? timestamp: user_click;
+}, true);
+
+function is_user_click(timestamp) {
+    return Math.abs(timestamp - user_click) < 10;
+}
+
+function is_user_scroll(timestamp) {
+    return Math.abs(timestamp - user_scroll) < 200;
+}
+
 /* Listen all click event */
 document.body.addEventListener("click", function(event) {
     let timestamp = get_timestamp();
@@ -730,10 +775,13 @@ document.body.addEventListener("click", function(event) {
     if (is_inject_el(event.target)) { // ignoring click on recoder
         return; 
     }
+    if(!is_user_click(timestamp)) {
+        return;
+    }
 
     console.log("onclick!");
     console.log(event.target);
-    if (ignore_click(event.target, timestamp)){  // TODO: more accurate filter
+    if (ignore_click(event.target, timestamp)){ 
         return;
     }
     
@@ -760,18 +808,29 @@ document.body.addEventListener("click", function(event) {
 add_input_handler(document)
 
 /* Listen scroll event */ 
+var update_allowed_scroll = async () => {
+    await new Promise(r => setTimeout(r, 10)); // wait a little while to make sure scroll is done
+    userset_scrollX = window.scrollX;
+    userset_scrollY = window.scrollY;
+    console.log("allowed scroll update", userset_scrollX, userset_scrollY);
+};
+
 window.addEventListener("scroll", (ev) => {
+    let timestamp = get_timestamp();
+    if(!is_user_scroll(timestamp)) {
+        console.log("not user scroll");
+        update_allowed_scroll();
+        return;
+    }
     if (!is_recording()) {  // ignoring if not recording
+        update_allowed_scroll();
         return;
     }
 
-    let timestamp = get_timestamp();
     let setXY = get_userset_scrollXY();
     console.log(setXY, window.scrollX, window.scrollY);
     
-    if (window.scrollX == setXY[0] && window.scrollY == setXY[1]) {
-        return;
-    } else if(plugin_scroll) {
+    if(plugin_scroll) {
         return;
     }
     console.log("scroll warning!");
