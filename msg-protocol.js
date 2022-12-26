@@ -214,7 +214,7 @@ const BboxEventRule = {
     else if(type == String)
         return 'string';
     else
-        throw "illegal type";
+        throw new Error("illegal type");
 }
 
 /**
@@ -301,7 +301,7 @@ class MsgRecoderEvent extends PluginMsgEvent {
         if(type == RecoderEventType.BEGIN) {
             if(msg_handler.is_recording) {
                 this.legal = false;
-                throw "Shouldn't in recording!";
+                throw new Error("Shouldn't in recording!");
             }
             let timestamp = this.msg.timestamp;
 
@@ -318,7 +318,7 @@ class MsgRecoderEvent extends PluginMsgEvent {
         else if(type === RecoderEventType.END) {
             if(!msg_handler.is_recording) {
                 this.legal = false;
-                throw "Isn't in recording!";
+                throw new Error("Isn't in recording!");
             }
             msg_handler.store(); 
         }
@@ -609,7 +609,7 @@ export class Message {
             }
         } else if (this.event_type == MessageEventType.RecorderEvent) {
             if (this.id != msg_handler.cur_id) {
-                throw "ignore recoder msg because of illegal msg id!";
+                throw new Error("ignore recoder msg because of illegal msg id!");
             }
 
             msg_handler.received_msgs.push(this);
@@ -619,7 +619,7 @@ export class Message {
             msg_handler.received_msgs.push(this);
         } else {
             if(this.id != msg_handler.cur_id || !msg_handler.is_recording) {
-                throw "ignore action msg!";
+                throw new Error("ignore action msg!");
             }
 
             this.event.handle(msg_handler, sender, sendResponse);

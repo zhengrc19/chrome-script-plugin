@@ -93,7 +93,7 @@ class CaptureTask {
  */
  function download_img(url, timestamp, id_date, event_name, suffix) {
     if (id_date == null) {
-        throw "null id_date!";
+        throw new Error("null id_date!");
     }
     
     let date_str = id_date.toISOString().replaceAll("-","_").replaceAll(":", ".");
@@ -140,7 +140,7 @@ export class ImgCapTask extends CaptureTask {
  */
  function download_mhtml(url, timestamp, id_date, event_name) {
     if (id_date == null) {
-        throw "null id_date!";
+        throw new Error("null id_date!");
     }
     
     let date_str = id_date.toISOString().replaceAll("-","_").replaceAll(":", ".");
@@ -281,7 +281,7 @@ class CapTaskController {
      */
     push(task) {
         if (!this.accept) {
-            throw "Task is not accepted this moment!";
+            throw new Error("Task is not accepted this moment!");
         }
 
         let tab_id = task.tab_id;
@@ -334,9 +334,9 @@ class CapTaskController {
         console.assert(type != null);
 
         if(!(task_id in this.queues)) {
-            throw `Task Id not found! id=${task_id}, queues=${this.queues}`;
+            throw new Error(`Task Id not found! id=${task_id}, queues=${this.queues}`);
         } else if(type != MaskMsgType.MaskReady) {
-            throw `Illegal MaskMsg type received! type=${type}`;
+            throw new Error(`Illegal MaskMsg type received! type=${type}`);
         }
 
         let task = this.queues[task_id]; 
