@@ -123,6 +123,7 @@ export class ImgCapTask extends CaptureTask {
      }
 
     async run() {
+        this.status = TaskStatus.Running;
         await chrome.tabs.captureVisibleTab().then((data_url) => {
             download_img(data_url, this.timestamp, this.id_date, this.event_name, this.suffix); // DO NOT wait for download
         });
@@ -167,6 +168,7 @@ export class MHTMLCapTask extends CaptureTask {
     }
 
     async run() {
+        this.status = TaskStatus.Running;
         await chrome.pageCapture.saveAsMHTML({ tabId: this.tab_id}, async (blob) => {
             const content = await blob.text();
             const url = "data:application/x-mimearchive;base64," + btoa(content);
@@ -196,6 +198,7 @@ export class CapTaskList extends CaptureTask {
     }
 
     async run() {
+        this.status = TaskStatus.Running;
         let promises = [];
         this.task_list.forEach((val, id, number) => {
             promises.push(val.run());
@@ -301,6 +304,24 @@ class CapTaskController {
         this.queues[task.task_id] = task;
         console.log("boot task: ", task);
         task.boot();
+
+        let self = this;
+        setTimeout(() => {
+            if (task.status == TaskStatus.Wait) {
+                let lock = self.tab_locks[task.tab_id];
+                if(lock.is_locked) {
+                    lock.unlock();
+                }
+
+                chrome.scripting.executeScript({
+                    target: { tabId: task.tab_id },
+                    func: () => {
+                        let alert = "有截图任务超时！\n" + "如您刚刚进行了页面跳转，可以检查截图情况无误后，选择忽略此消息\n"+  "其他情况建议结束此次录制并重新录制。";
+                        window.alert(alert);
+                    }
+                });
+            }
+        }, 1000);
     }
 
     /**
