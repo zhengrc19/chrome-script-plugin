@@ -336,6 +336,7 @@ class CapTaskController {
             if (lock.is_locked) {
                 lock.unlock();
             }
+            throw err;
         }
     }
 
