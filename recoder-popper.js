@@ -901,6 +901,7 @@ text_form.addEventListener("submit", (event) => {
 
     window.alert("提交成功！");
     el.value = null;
+    hide_element(text_window);
 });
 
 var selection_data = null;
