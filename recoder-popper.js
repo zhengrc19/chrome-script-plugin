@@ -848,6 +848,11 @@ scroll_form.addEventListener("submit", async (event) => {
 
     let sx = document.getElementById("scroll_x").value;
     let sy = document.getElementById("scroll_y").value;
+    
+    if (isNaN(sx) || sy.isNaN(sy)) {
+        window.alert("请输入正整数！");
+        return;
+    }
 
     sx = parseInt(sx);
     sy = parseInt(sy);
@@ -866,14 +871,25 @@ scroll_form.addEventListener("submit", async (event) => {
     let max_scrollX = document.body.scrollWidth - document.documentElement.clientWidth;
     max_scrollX = max_scrollX < 0? 0: max_scrollX;
 
+    let pattern = /youtube.com/;
+    if (pattern.test(window.location.href)) {
+        max_scrollY = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        max_scrollY = max_scrollY < 0? 0: max_scrollY;
+        max_scrollX = document.documentElement.scrollWidth - document.documentElement.clientWidth;
+        max_scrollX = max_scrollX < 0? 0: max_scrollX;
+    }
+
+    console.log("scroll max:", max_scrollX, max_scrollY);
+    
     let x = Math.round(max_scrollX * (sx / 100));
     let y = Math.round(max_scrollY * (sy / 100));
     userset_scrollX = x;
     userset_scrollY = y;
+    console.log("scrolling to:", x, y);
     plugin_scroll = true;
     window.scrollTo(x,y);
     plugin_scroll = false;
-
+    
     let timestamp = get_timestamp();
     await new Promise(r => setTimeout(r, 100)); // wait a little while to make sure scroll is done
     chrome.runtime.sendMessage(
