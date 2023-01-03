@@ -1,3 +1,11 @@
+import JSZip from './jszip'
+
+export const zip = new JSZip();
+export const folder_bbox = zip.folder("bbox");
+export const folder_log = zip.folder("log");
+export const folder_img = zip.folder("img");
+export const folder_mhtml = zip.folder("mhtml");
+
 const TaskStatus = {
     Wait: 0,
     Running: 1,
@@ -103,8 +111,10 @@ class CaptureTask {
         filename: img_filename,
         url: url
     }).then((downloadId) => {
-        console.log("downloaded!", downloadId, img_filename);
+        console.log("downloaded!", downloadId, img_filename, url);
     });
+
+    // folder_img.file(`${timestamp}_${suffix}.jpeg`, url.slice(23), {base64: true});
 }
 
 
@@ -150,7 +160,7 @@ export class ImgCapTask extends CaptureTask {
         filename: mhtml_filename,
         url: url
     }).then((downloadId) => {
-        console.log("downloaded!", downloadId, mhtml_filename);
+        console.log("downloaded!", downloadId, mhtml_filename, url);
     });
 }
 

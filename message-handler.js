@@ -1,4 +1,5 @@
 import { Message } from "./msg-protocol.js";
+// import { task_controller, zip, folder_log } from "./capture-handler.js"
 import { task_controller } from "./capture-handler.js"
 
 export default class RecorderHandler {
@@ -48,23 +49,36 @@ export default class RecorderHandler {
         console.log(str_msgs);
         let json_url = "data:application/x-mimearchive;base64," + btoa(unescape(encodeURIComponent(str_msgs)));
         let json_filename = `record_${this.event_name}_${date_str}/log/actions.json`;
-        chrome.downloads.download({
-            filename: json_filename,
-            url: json_url
-        }).then((downloadId) => {
-            console.log("Downloaded!", downloadId, json_filename);
-        });
+        // chrome.downloads.download({
+            //     filename: json_filename,
+            //     url: json_url
+            // }).then((downloadId) => {
+        //     console.log("Downloaded!", downloadId, json_filename);
+        // });
 
         let str_sent = JSON.stringify(this.sended_msgs, null, 4);
         let send_url = "data:application/x-mimearchive;base64," + btoa(unescape(encodeURIComponent(str_sent)));
         let send_filename = `record_${this.event_name}_${date_str}/log/log.json`;
-        chrome.downloads.download({
-            filename: send_filename,
-            url: send_url
-        }).then((downloadId) => {
-            console.log("Downloaded!", downloadId, send_filename);
-        });
+        // chrome.downloads.download({
+        //     filename: send_filename,
+        //     url: send_url
+        // }).then((downloadId) => {
+        //     console.log("Downloaded!", downloadId, send_filename);
+        // });
+        
+        folder_log.file("actions.json", str_msgs);
+        folder_log.file("log.json", str_sent);
 
+        zip.generateAsync({type: "blob"}).then(function(content) {
+            let zip_url = "data:application/x-mimearchive;base64," + content;
+            let zip_file_name = `record_${this.event_name}_${date_str}.zip`;
+            chrome.downloads.download({
+                filename: zip_file_name,
+                url: zip_url
+            }).then((downloadId) => {
+                console.log("Downloaded!", downloadId, zip_file_name);
+            });
+        })
         
         console.log("clearing msgs");
         this.received_msgs = [];
