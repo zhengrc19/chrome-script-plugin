@@ -231,7 +231,6 @@ float_recoder.classList.add("go-top");
 float_recoder.classList.add("hidden");
 float_recoder.id = "ext-recoder-window"
 float_recoder.innerHTML = '<a href="#" id="ext-recoder-href" role="button">开始<br/>录制</a>';
-// all_pop_windows.appendChild(float_recoder);
 document.body.appendChild(float_recoder);
 
 recoder_button = float_recoder.children[0];
@@ -262,7 +261,6 @@ dropdown_actions.classList.add("dropdown-menu");
 
 action_panel.appendChild(pop_button);
 action_panel.appendChild(dropdown_actions);
-// all_pop_windows.appendChild(action_panel);
 document.body.appendChild(action_panel);
 
 var scroll_window = document.createElement("div");
@@ -317,11 +315,8 @@ paste_window.innerHTML = ' <p>请复制想要的内容，点击复制后，复�
     </div> \
 </form>'
 
-// all_pop_windows.appendChild(scroll_window);
 document.body.appendChild(scroll_window);
-// all_pop_windows.appendChild(text_window);
 document.body.appendChild(text_window);
-// all_pop_windows.appendChild(paste_window);
 document.body.appendChild(paste_window);
 
 var scroll_form = scroll_window.children[1];
