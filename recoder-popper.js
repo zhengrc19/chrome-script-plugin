@@ -556,6 +556,7 @@ function get_selector(el) {
     };
 }
 
+var all_listened_els = [];
 var input_tag_names = ["input", "select"];
 /**
 * @param {HTMLElement} el 
@@ -564,12 +565,17 @@ function add_input_handler(el) {
     for(let i=0;i<input_tag_names.length;i++){
         let tagname = input_tag_names[i];
         let input_list = el.getElementsByTagName(tagname);
-        console.log(tagname, input_list.length);
         for (let i = 0; i < input_list.length; i++) {
             let input_item = input_list[i];
             if(is_inject_el(input_item)) {
                 continue;
             }
+
+            if(all_listened_els.findIndex((val, id) => val === input_item) != -1) {
+                continue;
+            }
+            console.log(input_item);
+            all_listened_els.push(input_item);
             input_item.addEventListener("change", (ev) => {
                 console.log("onchange!");
                 if (!is_recording()) {  // ignoring if not recording
@@ -801,9 +807,11 @@ document.body.addEventListener("click", function(event) {
     return;
 }, true);
 
-
 /* Listen all input change event */
-add_input_handler(document)
+(async() => {
+    await new Promise(r => setTimeout(r, 1000));
+    add_input_handler(document);
+})()
 
 /* Listen scroll event */ 
 var update_allowed_scroll = async () => {
@@ -843,7 +851,7 @@ scroll_form.addEventListener("submit", async (event) => {
     let sx = document.getElementById("scroll_x").value;
     let sy = document.getElementById("scroll_y").value;
     
-    if (isNaN(sx) || sy.isNaN(sy)) {
+    if (isNaN(sx) || isNaN(sy)) {
         window.alert("请输入正整数！");
         return;
     }
