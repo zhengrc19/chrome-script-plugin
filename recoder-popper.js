@@ -556,10 +556,10 @@ function get_selector(el) {
     };
 }
 
+var input_tag_names = ["input", "select"];
 /**
 * @param {HTMLElement} el 
  */
-var input_tag_names = ["input", "select"];
 function add_input_handler(el) {
     for(let i=0;i<input_tag_names.length;i++){
         let tagname = input_tag_names[i];
@@ -571,6 +571,7 @@ function add_input_handler(el) {
                 continue;
             }
             input_item.addEventListener("change", (ev) => {
+                console.log("onchange!");
                 if (!is_recording()) {  // ignoring if not recording
                     return;
                 }
@@ -598,15 +599,13 @@ let pre_change_timestamp = -1;
 function observer_handler(mutationsList, observer) {
     let timestamp = get_timestamp()
     pre_change_timestamp = pre_change_timestamp < timestamp? timestamp: pre_change_timestamp;
-    if(is_recording()) {
-        for(let mutation of mutationsList) {
-            if (mutation.type == 'childList') {
-                mutation.addedNodes.forEach((val, index, arr) => {
-                    if (val instanceof HTMLElement) {
-                        add_input_handler(val);
-                    }
-                });
-            }
+    for(let mutation of mutationsList) {
+        if (mutation.type == 'childList') {
+            mutation.addedNodes.forEach((val, index, arr) => {
+                if (val instanceof HTMLElement) {
+                    add_input_handler(val);
+                }
+            });
         }
     }
 }
@@ -861,18 +860,10 @@ scroll_form.addEventListener("submit", async (event) => {
         return;
     }
 
-    let max_scrollY = document.body.scrollHeight - document.documentElement.clientHeight;
+    let max_scrollY = document.documentElement.scrollHeight - document.documentElement.clientHeight;
     max_scrollY = max_scrollY < 0? 0: max_scrollY;
-    let max_scrollX = document.body.scrollWidth - document.documentElement.clientWidth;
+    let max_scrollX = document.documentElement.scrollWidth - document.documentElement.clientWidth;
     max_scrollX = max_scrollX < 0? 0: max_scrollX;
-
-    let pattern = /youtube.com/;
-    if (pattern.test(window.location.href)) {
-        max_scrollY = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-        max_scrollY = max_scrollY < 0? 0: max_scrollY;
-        max_scrollX = document.documentElement.scrollWidth - document.documentElement.clientWidth;
-        max_scrollX = max_scrollX < 0? 0: max_scrollX;
-    }
 
     console.log("scroll max:", max_scrollX, max_scrollY);
     
