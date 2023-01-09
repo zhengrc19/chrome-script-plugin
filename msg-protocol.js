@@ -1,6 +1,5 @@
 import { FieldMissingErr, IllegalFieldTypeErr} from "./errors.js";
-// import { task_controller, MaskMsgType, ImgCapTask, MHTMLCapTask, CapTaskList, TaskType, folder_bbox } from "./capture-handler.js";
-import { task_controller, MaskMsgType, ImgCapTask, MHTMLCapTask, CapTaskList, TaskType } from "./capture-handler.js";
+import { task_controller, MaskMsgType, ImgCapTask, MHTMLCapTask, CapTaskList, TaskType, folder_bbox } from "./capture-handler.js";
 
 export const MessageEventType = {
     ContentInitEvent: 0,

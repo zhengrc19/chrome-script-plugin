@@ -1,6 +1,5 @@
 import { Message } from "./msg-protocol.js";
-// import { task_controller, zip, folder_log } from "./capture-handler.js"
-import { task_controller } from "./capture-handler.js"
+import { task_controller, zip, folder_log } from "./capture-handler.js"
 
 export default class RecorderHandler {
     constructor() {
@@ -69,9 +68,18 @@ export default class RecorderHandler {
         folder_log.file("actions.json", str_msgs);
         folder_log.file("log.json", str_sent);
 
-        zip.generateAsync({type: "blob"}).then(function(content) {
-            let zip_url = "data:application/x-mimearchive;base64," + content;
-            let zip_file_name = `record_${this.event_name}_${date_str}.zip`;
+        function blobToBase64(blob) {
+            return new Promise((resolve, _) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.readAsDataURL(blob);
+            });
+        }
+
+        let event_name = this.event_name;
+        zip.generateAsync({type: "blob"}).then(async function(content) {
+            let zip_url = await blobToBase64(content);
+            let zip_file_name = `record_${event_name}_${date_str}.zip`;
             chrome.downloads.download({
                 filename: zip_file_name,
                 url: zip_url
