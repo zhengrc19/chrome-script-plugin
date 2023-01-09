@@ -1,5 +1,5 @@
 import { FieldMissingErr, IllegalFieldTypeErr} from "./errors.js";
-import { task_controller, MaskMsgType, ImgCapTask, MHTMLCapTask, CapTaskList, TaskType } from "./capture-handler.js";
+import { task_controller, MaskMsgType, ImgCapTask, MHTMLCapTask, CapTaskList, TaskType, folder_bbox } from "./capture-handler.js";
 
 export const MessageEventType = {
     ContentInitEvent: 0,
@@ -517,13 +517,14 @@ class MsgBboxEvent extends PluginMsgEvent {
         let date_str = msg_handler.record_id_date.toISOString().replaceAll("-", "_").replaceAll(":", ".");
         let event_name = msg_handler.event_name;
         let bbox_fname = `record_${event_name}_${date_str}/bbox/${this.msg.timestamp}.json`;
-        let bbox_url = "data:application/json;base64," + btoa(unescape(encodeURIComponent(this.str)));
-        chrome.downloads.download({
-            filename: bbox_fname,
-            url: bbox_url
-        }).then((downloadId) => {
-            console.log("downloaded!", downloadId, bbox_fname);
-        });
+        // let bbox_url = "data:application/json;base64," + btoa(unescape(encodeURIComponent(this.str)));
+        folder_bbox.file(`${this.msg.timestamp}.json`, this.str);
+        // chrome.downloads.download({
+        //     filename: bbox_fname,
+        //     url: bbox_url
+        // }).then((downloadId) => {
+        //     console.log("downloaded!", downloadId, bbox_fname);
+        // });
     }
 
     toJson() {

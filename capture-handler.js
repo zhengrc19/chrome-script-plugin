@@ -1,3 +1,11 @@
+import "./jszip.js";
+
+export const zip = new JSZip();
+export const folder_bbox = zip.folder("bbox");
+export const folder_log = zip.folder("log");
+export const folder_img = zip.folder("img");
+export const folder_mhtml = zip.folder("mhtml");
+
 const TaskStatus = {
     Wait: 0,
     Running: 1,
@@ -99,12 +107,14 @@ class CaptureTask {
     let date_str = id_date.toISOString().replaceAll("-","_").replaceAll(":", ".");
     let img_filename = `record_${event_name}_${date_str}/img/${timestamp}_${suffix}.jpeg`;
 
-    chrome.downloads.download({
-        filename: img_filename,
-        url: url
-    }).then((downloadId) => {
-        console.log("downloaded!", downloadId, img_filename);
-    });
+    // chrome.downloads.download({
+    //     filename: img_filename,
+    //     url: url
+    // }).then((downloadId) => {
+    //     console.log("downloaded!", downloadId, img_filename, url);
+    // });
+
+    folder_img.file(`${timestamp}_${suffix}.jpeg`, url.slice(23), {base64: true});
 }
 
 
@@ -133,12 +143,12 @@ export class ImgCapTask extends CaptureTask {
 
 
 /**
- * @param {string} url 
+ * @param {string} mhtml_content 
  * @param {number} timestamp
  * @param {Date} id_date date of recode starting time, use as unique record id
  * @param {string} event_name user given name of record event
  */
- function download_mhtml(url, timestamp, id_date, event_name) {
+ function download_mhtml(mhtml_content, timestamp, id_date, event_name) {
     if (id_date == null) {
         throw new Error("null id_date!");
     }
@@ -146,12 +156,13 @@ export class ImgCapTask extends CaptureTask {
     let date_str = id_date.toISOString().replaceAll("-","_").replaceAll(":", ".");
     let mhtml_filename = `record_${event_name}_${date_str}/mhtml/${timestamp}.mhtml`;
 
-    chrome.downloads.download({
-        filename: mhtml_filename,
-        url: url
-    }).then((downloadId) => {
-        console.log("downloaded!", downloadId, mhtml_filename);
-    });
+    // chrome.downloads.download({
+    //     filename: mhtml_filename,
+    //     url: url
+    // }).then((downloadId) => {
+    //     console.log("downloaded!", downloadId, mhtml_filename, url);
+    // });
+    folder_mhtml.file(`${timestamp}.mhtml`, mhtml_content);
 }
 
 
@@ -171,8 +182,9 @@ export class MHTMLCapTask extends CaptureTask {
         this.status = TaskStatus.Running;
         await chrome.pageCapture.saveAsMHTML({ tabId: this.tab_id}, async (blob) => {
             const content = await blob.text();
-            const url = "data:application/x-mimearchive;base64," + btoa(content);
-            download_mhtml(url, this.timestamp, this.id_date, this.event_name);  // DO NOT wait for download
+            // console.log(content);
+            // const url = "data:application/x-mimearchive;base64," + btoa(content);
+            download_mhtml(content, this.timestamp, this.id_date, this.event_name);  // DO NOT wait for download
         });
         this.status = TaskStatus.Finish;
     }
