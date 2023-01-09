@@ -99,8 +99,7 @@ function iterate_children(
     idx
 ) {
     let obj = new Object();
-    obj.id = element.id;
-    obj.level = prev_str + idx;
+    obj.selector = get_selector(element);
     obj.rectangle = element.getBoundingClientRect();
     obj.children = [];
     for (var i = 0; i < element.children.length; i++) {
