@@ -619,7 +619,7 @@ function add_input_handler(el) {
 /** listen document change */
 let pre_change_timestamp = -1;
 function observer_handler(mutationsList, observer) {
-    let timestamp = get_timestamp()
+    let timestamp = get_timestamp();
     pre_change_timestamp = pre_change_timestamp < timestamp? timestamp: pre_change_timestamp;
     for(let mutation of mutationsList) {
         if (mutation.type == 'childList') {
@@ -655,7 +655,8 @@ function ignore_click(el, timestamp) {
         return false;
     }
 
-    if(el.getAttribute("onclick") != null || el.getAttribute("href") != null) {
+    if((el.getAttribute("onclick") != null && el.getAttribute("onclick") != '') 
+    || (el.getAttribute("href") != null && el.getAttribute("href") != '')) {
         return false;
     }
 
