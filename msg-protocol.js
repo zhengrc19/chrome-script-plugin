@@ -177,7 +177,7 @@ const PasteEventRule = {
             }
         }
     },
-    text: {
+    selection: {
         type: String
     }
 }
