@@ -476,9 +476,9 @@ function get_selector(el) {
     if (el.tagName.toLowerCase() === "body") {
         return "BODY";
     }
-    if (el.id) {
-        return "#" + el.id;
-    }
+    // if (el.id) {
+    //     return "#" + el.id;
+    // }
 
     if(!el.parentElement) {
         return get_fall_back_selector(el);
