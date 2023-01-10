@@ -341,7 +341,8 @@ class MsgClickEvent extends PluginMsgEvent{
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, msg_handler.event_name, sendResponse, "click");
+        let img_task = new CapTaskList([TaskType.Img, TaskType.MHTML], sender.tab.id, timestamp,  
+            msg_handler.record_id_date, msg_handler.event_name, sendResponse, "click");
         task_controller.push(img_task);
     }
 }
@@ -357,7 +358,8 @@ class MsgInputEvent extends PluginMsgEvent {
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, msg_handler.event_name, sendResponse, "input");
+        let img_task = new CapTaskList([TaskType.Img, TaskType.MHTML], sender.tab.id, timestamp,  
+            msg_handler.record_id_date, msg_handler.event_name, sendResponse, "input");
         task_controller.push(img_task);
     }
 }
@@ -456,7 +458,8 @@ class MsgScrollEvent extends PluginMsgEvent {
 
     handle(msg_handler, sender, sendResponse) {
         let timestamp = this.msg.timestamp;
-        let img_task = new ImgCapTask(sender.tab.id, timestamp, msg_handler.record_id_date, msg_handler.event_name, sendResponse, "scroll");
+        let img_task = new CapTaskList([TaskType.Img, TaskType.MHTML], sender.tab.id, timestamp,  
+            msg_handler.record_id_date, msg_handler.event_name, sendResponse, "scroll");
         task_controller.push(img_task);
     }
 }

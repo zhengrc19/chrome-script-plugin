@@ -555,6 +555,23 @@ function get_selector(el) {
     };
 }
 
+/**
+ * @param {number} timestamp 
+ */
+async function download_bbox(timestamp) {
+    myAssert(record_id_date != null);
+    let bboxes = [];
+    for (var i = 0; i < document.body.children.length; i++) {
+        bboxes.push(iterate_children(document.body.children[i], '', i));
+    }
+    
+    let bboxes_str = JSON.stringify(bboxes, null, 4);
+    chrome.runtime.sendMessage(
+        build_bbox_msg(bboxes_str, timestamp)
+    )
+}
+
+
 var all_listened_els = [];
 var input_tag_names = ["input", "select"];
 /**
@@ -592,7 +609,7 @@ function add_input_handler(el) {
         
                 chrome.runtime.sendMessage(
                     build_input_msg(timestamp, bbox, selector, current_text),
-                    callback=get_mask_callback(timestamp)
+                    callback=get_mask_callback(timestamp, () => download_bbox(timestamp))
                 );
             });
         }
@@ -649,23 +666,6 @@ function ignore_click(el, timestamp) {
 var init_is_recording;
 var init_timestamp = get_timestamp();
 var record_id_date = null;
-
-/**
- * @param {number} timestamp 
- */
-async function download_bbox(timestamp) {
-    myAssert(record_id_date != null);
-    let bboxes = [];
-    for (var i = 0; i < document.body.children.length; i++) {
-        bboxes.push(iterate_children(document.body.children[i], '', i));
-    }
-    
-    let bboxes_str = JSON.stringify(bboxes, null, 4);
-    chrome.runtime.sendMessage(
-        build_bbox_msg(bboxes_str, timestamp)
-    )
-}
-
 
 let moved = false;
 let clicked = false;
@@ -801,7 +801,7 @@ document.body.addEventListener("click", function(event) {
 
     chrome.runtime.sendMessage(
         build_click_msg(timestamp, event.type, selector, bbox, event.offsetX, event.offsetY, event.pageX, event.pageY),
-        callback=get_mask_callback(timestamp)
+        callback=get_mask_callback(timestamp, () => download_bbox(timestamp))
     );
     return;
 }, true);
@@ -887,7 +887,7 @@ scroll_form.addEventListener("submit", async (event) => {
     await new Promise(r => setTimeout(r, 100)); // wait a little while to make sure scroll is done
     chrome.runtime.sendMessage(
         build_scroll_msg(timestamp, x, y),
-        callback=get_mask_callback(timestamp)
+        callback=get_mask_callback(timestamp, () => download_bbox(timestamp))
     );    
 });
 
