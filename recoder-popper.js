@@ -946,7 +946,7 @@ document.addEventListener("copy", (event) => {
             "selector": ed_selector,
             "offset": ed_offset
         },
-        "text": text
+        "selection": text
     };
 
     let el = document.getElementById("ext-paste");
