@@ -471,7 +471,8 @@ function get_fall_back_selector(el){
  */
 function get_selector(el) {
     if (el.tagName == null) {
-        return el.parentElement? get_selector(el.parentElement): get_fall_back_selector(el);
+        window.alert("出现错误：\n" + "前端发现元素" + el.toString() + "的 tag 不存在！" + "\n建议结束此次录制并重新录制。该问题若重复出现请联系相关人员。");
+        throw "元素 tag 不存在：" + el.toString();
     }
     if (el.tagName.toLowerCase() === "body") {
         return "BODY";
@@ -481,12 +482,22 @@ function get_selector(el) {
     // }
 
     if(!el.parentElement) {
-        return get_fall_back_selector(el);
+        window.alert("出现错误：\n" + "前端发现元素" + el.toString() + "的父亲不存在！" + "\n建议结束此次录制并重新录制。该问题若重复出现请联系相关人员。");
+        throw "元素父亲不存在：" + el.toString();
     }
 
     let child_idx = 1;
-    for (let e = el; e.previousElementSibling; e = e.previousElementSibling, child_idx++) ;
-    return get_selector(el.parentElement) + " > " + el.tagName + ":nth-child(" + child_idx.toString() + ")";
+    for (let e = el.previousElementSibling; e; e = e.previousElementSibling) {
+        if (e.tagName == null) {
+            window.alert("出现错误：\n" + "前端发现元素" + e.toString() + "的 tag 不存在！" + "\n建议结束此次录制并重新录制。该问题若重复出现请联系相关人员。");
+            throw "元素 tag 不存在：" + e.toString();
+        }
+
+        if (el.tagName == e.tagName) {
+            child_idx++;
+        }
+    }
+    return get_selector(el.parentElement) + " > " + el.tagName + ":nth-of-type(" + child_idx.toString() + ")";
 }
 
 /**
@@ -797,7 +808,7 @@ document.body.addEventListener("click", function(event) {
     // get selector
     let selector = get_selector(event.target);
     console.log(selector);
-    // console.assert(document.querySelector(selector) == event.target); // assert selector is right
+    console.assert(document.querySelector(selector) == event.target); // assert selector is right
     let bbox = event.target.getBoundingClientRect();
 
     chrome.runtime.sendMessage(
@@ -1030,7 +1041,7 @@ chrome.runtime.sendMessage(
         // mask loading 
         let load = document.getElementById("ext-plugin-loading");
         if (load != null) {
-            hide_element(load);
+            document.documentElement.removeChild(load);
         }
 
         if(init_is_recording) {
