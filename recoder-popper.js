@@ -93,6 +93,18 @@ function build_click_msg(
     return build_msg(MessageEventType.ClickEvent, timestamp, data);
 }
 
+/**
+ * @param {HTMLElement} el 
+ */
+function el_in_window(el) {
+    let rec = el.getBoundingClientRect();
+    let top = rec.top;
+    let bottom = rec.bottom;
+    let win_top = document.documentElement.scrollTop;
+    let win_bottom = win_top + document.documentElement.clientHeight;
+    return !(top >= win_bottom || bottom <= win_top);
+}
+
 function iterate_children(
     element,
     prev_str,
@@ -101,6 +113,7 @@ function iterate_children(
     let obj = new Object();
     obj.selector = get_selector(element);
     obj.rectangle = element.getBoundingClientRect();
+    obj.in_window = el_in_window(element);
     obj.children = [];
     for (var i = 0; i < element.children.length; i++) {
         obj.children.push(iterate_children(element.children[i], obj.level + '-', i));
@@ -267,15 +280,13 @@ scroll_window.classList.add("go-top");
 scroll_window.classList.add("window");
 scroll_window.classList.add("hidden");
 scroll_window.id = "scroll-window";
-scroll_window.innerHTML = '<p>请输入正整数百分比 (0-100) :</p> \
+scroll_window.innerHTML = ' \
 <form  class="form-inline" role="form"> \
-    <div class="form-group" style="margin-right: 5px;"> \
-        <label for="scroll_x">x: </label> \
-        <input type="text" id="scroll_x" name="scroll_x"  class="form-control" required> \
+    <div class="form-group"> \
+      <button class="btn btn-default" id="ext-btn-scrollup">上翻</button> \
     </div> \
-    <div class="form-group" style="margin-right: 5px;"> \
-        <label for="scroll_y">y: </label> \
-        <input type="text" id="scroll_y" name="scroll_y"  class="form-control" required> \
+    <div class="form-group"> \
+      <button class="btn btn-default" id="ext-btn-scrolldown">下翻</button> \
     </div> \
     <div class="form-group"> \
       <button type="submit" class="btn btn-default">确定</button> \
@@ -318,7 +329,7 @@ document.body.appendChild(scroll_window);
 document.body.appendChild(text_window);
 document.body.appendChild(paste_window);
 
-var scroll_form = scroll_window.children[1];
+var scroll_form = scroll_window.children[0];
 var text_form = text_window.children[0];
 var paste_form = paste_window.children[1];
 var all_windows = [scroll_window, text_window, paste_window];
@@ -856,52 +867,54 @@ window.addEventListener("scroll", (ev) => {
     window.scrollTo(setXY[0], setXY[1]);
 });
 
+/**
+ * @param {number} page 
+ */
+async function scroll_by_percent(page) {
+    let max_scrollY = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    max_scrollY = max_scrollY < 0? 0: max_scrollY;
+    let scroll_unit = document.documentElement.clientHeight;
+
+    let y = Math.round(scroll_unit * page) + userset_scrollY;
+    y = y > max_scrollY? max_scrollY: (y < 0? 0: y);
+
+    userset_scrollY = y;
+    console.log("scrolling y to:", y);
+    plugin_scroll = true;
+    window.scrollTo(userset_scrollX, y);
+    plugin_scroll = false;  
+}
+
+var scroll_up_button = document.getElementById("ext-btn-scrollup");
+var scroll_down_button = document.getElementById("ext-btn-scrolldown");
+scroll_up_button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if(!is_recording()) {
+        window.alert("未开始录制，请使用滚轮或键盘等进行滚动。");
+        return;
+    }
+    await scroll_by_percent(-1);
+});
+
+scroll_down_button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if(!is_recording()) {
+        window.alert("未开始录制，请使用滚轮或键盘等进行滚动。");
+        return;
+    }
+    await scroll_by_percent(1);
+});
+
 scroll_form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    let sx = document.getElementById("scroll_x").value;
-    let sy = document.getElementById("scroll_y").value;
-    
-    if (isNaN(sx) || isNaN(sy)) {
-        window.alert("请输入正整数！");
-        return;
-    }
-
-    sx = parseInt(sx);
-    sy = parseInt(sy);
-
-    if(sx == NaN || sy == NaN) {
-        window.alert("请输入正整数！");
-        return;
-    }
-    if(sx < 0 || sx > 100 || sy < 0 || sy > 100) {
-        window.alert("请输入 0 到 100 内的整数！");
-        return;
-    }
-
-    let max_scrollY = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-    max_scrollY = max_scrollY < 0? 0: max_scrollY;
-    let max_scrollX = document.documentElement.scrollWidth - document.documentElement.clientWidth;
-    max_scrollX = max_scrollX < 0? 0: max_scrollX;
-
-    console.log("scroll max:", max_scrollX, max_scrollY);
-    
-    let x = Math.round(max_scrollX * (sx / 100));
-    let y = Math.round(max_scrollY * (sy / 100));
-    userset_scrollX = x;
-    userset_scrollY = y;
-    console.log("scrolling to:", x, y);
-    plugin_scroll = true;
-    window.scrollTo(x,y);
-    plugin_scroll = false;
-    
     let timestamp = get_timestamp();
     await new Promise(r => setTimeout(r, 100)); // wait a little while to make sure scroll is done
     chrome.runtime.sendMessage(
-        build_scroll_msg(timestamp, x, y),
+        build_scroll_msg(timestamp, userset_scrollX, userset_scrollY),
         callback=get_mask_callback(timestamp, () => download_bbox(timestamp))
-    );    
-});
+    );  
+})
 
 text_form.addEventListener("submit", (event) => {
     event.preventDefault();
