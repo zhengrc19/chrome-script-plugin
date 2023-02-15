@@ -877,7 +877,7 @@ async function scroll_by_percent(page) {
     max_scrollY = max_scrollY < 0? 0: max_scrollY;
     let scroll_unit = document.documentElement.clientHeight;
 
-    let y = Math.round(scroll_unit * page) + userset_scrollY;
+    let y = Math.round(scroll_unit * page * 0.7) + userset_scrollY;
     y = y > max_scrollY? max_scrollY: (y < 0? 0: y);
 
     userset_scrollY = y;
