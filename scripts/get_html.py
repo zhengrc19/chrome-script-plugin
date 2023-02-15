@@ -1,13 +1,10 @@
 import email
 import os, sys
 import quopri
+from glob import glob
 
-def main():
-    if len(sys.argv)==1:
-        print("Usage: %s filename" % os.path.basename(sys.argv[0]))
-        sys.exit(1)
 
-    mhtml_path = sys.argv[1]
+def generate_html(mhtml_path):
     assert mhtml_path[-6:] == ".mhtml"
     with open(mhtml_path, "r") as mailFile:
         msg = email.message_from_string(mailFile.read())
@@ -29,6 +26,20 @@ def main():
                     f.write(html_context)
                 
                 break
+
+def main():
+    if len(sys.argv)==1:
+        print("Usage: %s filename" % os.path.basename(sys.argv[0]))
+        sys.exit(1)
+
+    mhtml_path = sys.argv[1]
+    assert os.path.exists(mhtml_path)
+    if os.path.isdir(mhtml_path):
+        for path in glob(os.path.join(mhtml_path, "*.mhtml")):
+            generate_html(path)
+    else:
+        generate_html(mhtml_path)
+    
 
 if __name__=="__main__":
     main()
