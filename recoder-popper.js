@@ -481,11 +481,12 @@ function get_fall_back_selector(el){
  * @returns {string}
  */
 function get_selector(el) {
-    if (el.tagName == null) {
+    if (el.tagName == null && el.nodeName == null) {
         window.alert("出现错误：\n" + "前端发现元素" + el.toString() + "的 tag 不存在！" + "\n建议结束此次录制并重新录制。该问题若重复出现请联系相关人员。");
         throw "元素 tag 不存在：" + el.toString();
     }
-    if (el.tagName.toLowerCase() === "body") {
+    let tagName = el.tagName ? el.tagName : el.nodeName;
+    if (tagName.toLowerCase() === "body") {
         return "BODY";
     }
     // if (el.id) {
@@ -499,16 +500,17 @@ function get_selector(el) {
 
     let child_idx = 1;
     for (let e = el.previousElementSibling; e; e = e.previousElementSibling) {
-        if (e.tagName == null) {
+        if (e.tagName == null && e.nodeName == null) {
             window.alert("出现错误：\n" + "前端发现元素" + e.toString() + "的 tag 不存在！" + "\n建议结束此次录制并重新录制。该问题若重复出现请联系相关人员。");
             throw "元素 tag 不存在：" + e.toString();
         }
+        let sonName = e.tagName ? e.tagName : e.nodeName;
 
-        if (el.tagName == e.tagName) {
+        if (tagName == sonName) {
             child_idx++;
         }
     }
-    return get_selector(el.parentElement) + " > " + el.tagName + ":nth-of-type(" + child_idx.toString() + ")";
+    return get_selector(el.parentElement) + " > " + tagName + ":nth-of-type(" + child_idx.toString() + ")";
 }
 
 /**
