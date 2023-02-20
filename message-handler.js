@@ -1,5 +1,5 @@
 import { Message } from "./msg-protocol.js";
-import { task_controller, zip, folder_log } from "./capture-handler.js"
+import { task_controller, zip, folder_log, folder_bbox, folder_mhtml, folder_img } from "./capture-handler.js"
 
 export default class RecorderHandler {
     constructor() {
@@ -93,6 +93,30 @@ export default class RecorderHandler {
         this.sended_msgs = [];
         console.log(this.received_msgs, this.sended_msgs);
         task_controller.clear();
+
+        // clear bbox folder, (.json)
+        // clear img folder,  (.jpeg)
+        // clear mhtml folder (.mthml)
+        let bboxes = folder_bbox.file(/json/);
+        let imgs = folder_img.file(/jpeg/);
+        let mhtmls = folder_bbox.file(/mhtml/);
+
+        console.log(bboxes);
+        console.log(imgs);
+        console.log(mhtmls);
+
+        bboxes.forEach((val, id, arr) => {
+            zip.remove(val.name);
+            console.log("removed", val.name);
+        });
+        imgs.forEach((val, id, arr) => {
+            zip.remove(val.name);
+            console.log("removed", val.name);
+        });
+        mhtmls.forEach((val, id, arr) => {
+            zip.remove(val.name);
+            console.log("removed", val.name);
+        });
 
         this.record_id_date = null;
     }
